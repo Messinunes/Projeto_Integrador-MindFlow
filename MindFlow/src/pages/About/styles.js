@@ -149,6 +149,10 @@ export const AboutImg = styled.img`
     @media screen and (min-width: 475px) and (max-width: 768px) {
       max-width: 400px;
     }
+    @media screen and (min-width: 320px) and (max-width: 375px) {
+      max-width: 400px;
+      margin-top: 15rem;
+    }
 `;
 
 export const AboutText = styled.h1`
@@ -168,7 +172,7 @@ export const AboutText = styled.h1`
 
     @media screen and (min-width: 475px) and (max-width: 768px) {
       font-size: 20px;
-      line-height: 13px;
+      line-height: 11px;
     }
 `;
 
@@ -192,7 +196,11 @@ export const Text = styled.p`
       padding-bottom: 5rem;
     }
 
-    @media screen and (min-width: 320px) and (max-width: 425px) {
+    @media screen and (min-width: 375px) and (max-width: 425px) {
       padding-bottom: 15rem;
+    }
+
+    @media screen and (min-width: 320px) and (max-width: 375px) {
+      padding-bottom: 35rem;
     }
 `;
