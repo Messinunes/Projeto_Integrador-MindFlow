@@ -12,16 +12,23 @@ import {
   AboutText
 } from './styles.js';
 
-function About() {
+function About({ navigateTo }) {
+  const handleNavClick = (page, event) => {
+    event.preventDefault();
+    if (navigateTo) {
+      navigateTo(page);
+    }
+  };
+
   return (
     <AboutBody>
       <AboutHeader>
         <HeaderSection>
           <Logo src="src/assets/logo_navbar.png" alt="Logo Navbar" />
           <Navbar>
-            <b><a href="home">Home</a></b>
-            <b><a href="IA">IA</a></b>
-            <b><a href="about">Sobre Nós</a></b>
+            <b><a href="#home" onClick={(e) => handleNavClick('home', e)}>Home</a></b>
+            <b><a href="#ia" onClick={(e) => handleNavClick('ia', e)}>IA</a></b>
+            <b><a href="#about" onClick={(e) => handleNavClick('about', e)}>Sobre Nós</a></b>
           </Navbar>
         </HeaderSection>
       </AboutHeader>

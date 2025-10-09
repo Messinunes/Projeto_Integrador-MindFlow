@@ -10,16 +10,26 @@ import {
   Content
 } from './styles.js';
 
-function Home() {
+function Home({ navigateTo }) {
+  const handleNavClick = (page, event) => {
+    event.preventDefault();
+    console.log('🖱️ Clicou no link:', page); // DEBUG
+    if (navigateTo) {
+      navigateTo(page);
+    } else {
+      console.log('❌ navigateTo não está definido');
+    }
+  };
+
   return (
     <HomeBody>
       <HomeHeader>
         <HeaderSection>
           <Logo src="src/assets/logo_navbar.png" alt="Logo Navbar" />
           <Navbar>
-            <b><a href="home">Home</a></b>
-            <b><a href="IA">IA</a></b>
-            <b><a href="about">Sobre Nós</a></b>
+            <b><a href="#home" onClick={(e) => handleNavClick('home', e)}>Home</a></b>
+            <b><a href="#ia" onClick={(e) => handleNavClick('ia', e)}>IA</a></b>
+            <b><a href="#about" onClick={(e) => handleNavClick('about', e)}>Sobre Nós</a></b>
           </Navbar>
         </HeaderSection>
       </HomeHeader>
