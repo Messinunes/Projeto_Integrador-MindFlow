@@ -1,15 +1,16 @@
 // src/main.jsx
 import { StrictMode, useState } from 'react'
-import { createRoot } from 'react-dom/client'
+import { createRoot } from 'react-dom/client';
 import Home from './pages/Home'
 import About from './pages/About'
 import IA from './pages/IA'
 import Login from './pages/Login'
 import Cadastro from './pages/Cadastro'
+import Dashboard from './pages/Dashboard'
 import MyGlobalStyles from './styles/globalStyles'
 
 function App() {
-  const [currentPage, setCurrentPage] = useState('home')
+  const [currentPage, setCurrentPage] = useState('dashboard')
 
   const navigateTo = (page) => {
     console.log('🚀 Navegando para:', page) // DEBUG
@@ -30,6 +31,8 @@ function App() {
         return <Login navigateTo={navigateTo} />
       case 'cadastro':
         return <Cadastro navigateTo={navigateTo} />
+      case 'dashboard':
+        return <Dashboard navigateTo={navigateTo} />
       default:
         return <Home navigateTo={navigateTo} />
     }
