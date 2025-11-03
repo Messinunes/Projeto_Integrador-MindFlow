@@ -9,6 +9,7 @@ import {
   HomeContainer,
   Content
 } from './styles.js';
+  
 
 function Home({ navigateTo }) {
   const handleNavClick = (page, event) => {
@@ -29,8 +30,9 @@ function Home({ navigateTo }) {
           <Navbar>
             <b><a href="#home" onClick={(e) => handleNavClick('home', e)}>Home</a></b>
             <b><a href="#ia" onClick={(e) => handleNavClick('ia', e)}>IA</a></b>
-            <b><a href="#login" onClick={(e) => handleNavClick('login', e)}>Login</a></b>
             <b><a href="#about" onClick={(e) => handleNavClick('about', e)}>Sobre Nós</a></b>
+            <b><a class="login_nav" href="#login" onClick={(e) => handleNavClick('login', e)}>Login</a></b>
+
           </Navbar>
         </HeaderSection>
       </HomeHeader>

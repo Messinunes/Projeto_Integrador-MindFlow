@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'; // Adicionado useEffect
 // Importações de Componentes
+import ChatPanel from '../../components/ChatPanel/ChatPanel.jsx';
 import TaskModal from '../../components/TaskModal/index.jsx';
 import ColunaTask from '../../components/ColumnTask';
 import SprintModal from '../../components/SprintModal';
@@ -47,6 +48,10 @@ import {
     ProfileInfo,
     SettingsList,
     SettingsItem,
+
+    FloatingButtonsContainer,
+    FloatingButton,
+    FloatingButtonIcon
 } from './styles.js';
 
 // Importações para o Calendário
@@ -152,7 +157,32 @@ const CHART_TITLES = Object.keys(CHART_COMPONENTS);
 
 // --- COMPONENTES DE SEÇÃO SIMPLES (MANTIDOS) ---
 const ComponentIA = () => <div><h2>Conteúdo: Inteligência Artificial</h2></div>;
-const ComponentChat = () => <div><h2>Conteúdo: Chat / Mensagens</h2></div>;
+const ComponentChat = () => (
+  <div style={{ 
+    display: 'flex', 
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    height: '100%',
+    flexDirection: 'column',
+    gap: '20px'
+  }}>
+    <h2>Chat</h2>
+    <p>Use o botão flutuante no canto inferior direito para abrir o chat</p>
+    <button 
+      onClick={toggleChat}
+      style={{
+        padding: '10px 20px',
+        backgroundColor: '#5a52d9',
+        color: 'white',
+        border: 'none',
+        borderRadius: '8px',
+        cursor: 'pointer'
+      }}
+    >
+      Abrir Chat
+    </button>
+  </div>
+);
 
 // Componente Sair foi ajustado para ser um elemento clicável, mas não
 // é mais o componente principal de uma "seção".
@@ -177,6 +207,12 @@ function Dashboard({ navigateTo }) { // <--- 🌟 CORREÇÃO 1: Desestruturar na
     const [isDarkMode, setIsDarkMode] = useState(false);
 
     const taskToEdit = editingTaskId ? kanbanData.tasks[editingTaskId] : null;
+    const [isChatOpen, setIsChatOpen] = useState(false);
+
+    //PARA ABRIR E FECHAR O CHAT
+    const toggleChat = () => {
+        setIsChatOpen(prev => !prev);
+    };
 
     const toggleSettingsPanel = () => {
         setIsSettingsPanelOpen(prev => !prev);
@@ -743,7 +779,24 @@ function Dashboard({ navigateTo }) { // <--- 🌟 CORREÇÃO 1: Desestruturar na
                     />
                 )}
 
+                        {/* BOTÕES FLUTUANTES */}
+                    <FloatingButtonsContainer>
+                    <FloatingButton $type="task" onClick={() => openModal(null)}>
+                        <FloatingButtonIcon src="src\assets\mensagens_1.png"/>
+                    </FloatingButton>
+                    
+                    <FloatingButton $type="chat" onClick={(toggleChat)}>
+                        <FloatingButtonIcon src="\src\assets\tecnologia-de-ia_1.png"/>
+                    </FloatingButton>
+                    </FloatingButtonsContainer>
                 <UserSettingsPanel />
+
+                    <ChatPanel 
+                        open={isChatOpen} 
+                        onClose={toggleChat} 
+                        isDarkMode={isDarkMode} 
+                    />
+
             </LayoutContainer>
         </HomeBody>
     );

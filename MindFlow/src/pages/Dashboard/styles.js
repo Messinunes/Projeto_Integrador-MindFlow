@@ -501,3 +501,56 @@ export const SettingsItem = styled.div`
         color: ${props => getThemeColors(props.$isDarkMode).primary};
     }
 `;
+
+// =========================================================================
+// BOTÕES FLUTUANTES
+// =========================================================================
+
+export const FloatingButtonsContainer = styled.div`
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  z-index: 999;
+`;
+
+export const FloatingButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 15px 20px;
+  border: none;
+  border-radius: 50px;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+  font-weight: 600;
+  font-size: 14px;
+  
+  /* Cor baseada no tipo de botão */
+  background-color: ${props => props.$type === 'task' ? '#3133B8' : '#3133B8'};
+  color: white;
+
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+    
+    /* Efeito de brilho no hover */
+    background-color: ${props => props.$type === 'task' ? '#3133B8' : '#3133B8'};
+  }
+
+  &:active {
+    transform: translateY(-1px);
+  }
+`;
+
+export const FloatingButtonIcon = styled.img`
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 24px;
+`;

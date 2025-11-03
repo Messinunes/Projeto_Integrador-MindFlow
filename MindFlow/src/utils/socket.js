@@ -1,0 +1,11 @@
+// src/utils/socket.js
+import { io } from "socket.io-client";
+
+const SERVER_URL = import.meta.env.VITE_CHAT_SERVER_URL || "http://localhost:4000";
+
+const socket = io(SERVER_URL, {
+  transports: ["websocket"],
+  autoConnect: true,
+});
+
+export default socket;
