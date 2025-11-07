@@ -29,7 +29,7 @@ export const ChatPanelContainer = styled.div`
   -webkit-backdrop-filter: blur(10px);
   
   /* Linha colorida ao redor de toda a box */
-  border: 3px solid #3133B8; /* Cor azul - você pode alterar para qualquer cor */
+  border: 3px solid #3133B8;
 `;
 
 export const ChatPanelContent = styled.div`
@@ -43,18 +43,18 @@ export const ChatHeader = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 16px; /* Reduzido padding */
+  padding: 12px 16px;
   color: white;
   border-bottom: 1px solid #e5e7eb;
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  border-bottom: var(--blue_line);
+  border-bottom: 1.8px solid #3133B8;
   box-shadow: 0 2px 10px rgba(49, 51, 184, 0.2);
 `;
 
 export const HeaderTitle = styled.h3`
   margin: 0;
-  font-size: 16px; /* Reduzido de 18px */
+  font-size: 16px;
   font-weight: 500;
   color: black;
 `;
@@ -62,10 +62,10 @@ export const HeaderTitle = styled.h3`
 export const CloseButton = styled.button`
   background: none;
   border: none;
-  font-size: 20px; /* Reduzido de 24px */
+  font-size: 20px;
   color: white;
   cursor: pointer;
-  padding: 4px; /* Reduzido de 5px */
+  padding: 4px;
   border-radius: 4px;
   transition: background-color 0.2s;
 
@@ -78,12 +78,12 @@ export const CloseButton = styled.button`
 export const MessagesContainer = styled.div`
   flex: 1;
   overflow-y: auto;
-  padding: 12px; /* Reduzido de 16px */
+  padding: 12px;
   background-color: ${props => props.$isDarkMode ? '#2c2c2c' : '#f9fafb'};
   
   /* Custom scrollbar */
   &::-webkit-scrollbar {
-    width: 4px; /* Reduzido de 6px */
+    width: 4px;
   }
   
   &::-webkit-scrollbar-track {
@@ -104,45 +104,55 @@ export const MessagesContainer = styled.div`
 export const MessageBubble = styled.div`
   display: flex;
   justify-content: ${props => props.$isMine ? "flex-end" : "flex-start"};
-  margin-bottom: 8px; /* Reduzido de 12px */
+  margin-bottom: 8px;
 
   .message-content {
-    max-width: 75%; /* Aumentado ligeiramente para compensar o tamanho menor */
-    background-color: ${props => props.$isMine ? "#3133B8" : "#e5e7eb"};
-    color: ${props => props.$isMine ? "#fff" : "#000"};
-    padding: 8px 12px; /* Reduzido de 10px 14px */
-    border-radius: 16px; /* Reduzido de 18px */
+    max-width: 75%;
+    border: ${props => {
+      if (props.$isMine) return "3px solid #3133B8"; // Azul para mensagens do usuário
+      if (props.$isAI) return "3px solid #3133B8"; // Verde para mensagens da IA
+      if (props.$isTyping) return "#F3F4F6"; // Cinza claro para "digitando"
+      return "#E5E7EB"; // Cinza para outras mensagens
+    }};
+    color: ${props => {
+      if (props.$isMine || props.$isAI) return "#black";
+      if (props.$isTyping) return "#6B7280";
+      return "#000000";
+    }};
+    padding: 8px 12px;
+    border-radius: 16px;
     border-top-right-radius: ${props => props.$isMine ? "4px" : "16px"};
     border-top-left-radius: ${props => props.$isMine ? "16px" : "4px"};
     word-wrap: break-word;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-    font-size: 14px; /* Garantir tamanho de fonte consistente */
+    font-size: 14px;
+    position: relative;
   }
 `;
 
 export const TimeStamp = styled.div`
-  font-size: 9px; /* Reduzido de 10px */
-  color: ${props => props.$isMine ? "rgba(255, 255, 255, 0.7)" : "#6b7280"};
-  margin-top: 2px; /* Reduzido de 4px */
-  text-align: right;
+  font-size: 9px;
+  color: ${props => props.$isMine ? "#6b7280" : "#6b7280"};
+  margin-top: 2px;
+  text-align: ${props => props.$isMine ? "right" : "left"};
 `;
 
 export const InputContainer = styled.div`
   display: flex;
   gap: 8px;
-  padding: 12px; /* Reduzido de 16px */
+  padding: 12px;
   background-color: ${props => props.$isDarkMode ? '#1e1e1e' : 'white'};
   border-top: 1px solid #e5e7eb;
 `;
 
 export const MessageInput = styled.input`
   flex: 1;
-  padding: 10px 14px; /* Reduzido de 12px 16px */
-  border-radius: 20px; /* Reduzido de 24px */
+  padding: 10px 14px;
+  border-radius: 20px;
   border: 1px solid #d1d5db;
   outline: none;
   font-family: inherit;
-  font-size: 13px; /* Reduzido de 14px */
+  font-size: 13px;
   background-color: ${props => props.$isDarkMode ? '#3a3a3a' : '#f9fafb'};
   color: ${props => props.$isDarkMode ? 'white' : 'black'};
 
@@ -160,15 +170,15 @@ export const SendButton = styled.button`
   background-color: #3133B8;
   color: #fff;
   border: none;
-  width: 40px; /* Reduzido de 44px */
-  height: 40px; /* Reduzido de 44px */
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.2s ease;
-  font-size: 14px; /* Ajustado para o novo tamanho */
+  font-size: 14px;
 
   &:hover {
     background-color: #3133B8;
@@ -190,3 +200,4 @@ export const Img_Enviar = styled.img`
   width: 16px;
   height: 16px;
 `;
+

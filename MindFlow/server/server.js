@@ -5,7 +5,13 @@ const mysql = require("mysql2");
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
+const io = new Server(server, {
+  cors: {
+    origin: "http://localhost:5173",
+    methods: ["GET", "POST"]
+  }
+});
+
 
 // Configuração genérica do MySQL
 const db = mysql.createConnection({
@@ -61,6 +67,6 @@ io.on("connection", socket => {
 });
 
 // Iniciar servidor
-server.listen(3000, () => {
-    console.log("Servidor rodando em http://localhost:3000");
+server.listen(5173, () => {
+    console.log("Servidor rodando em http://localhost:5173");
 });
