@@ -12,12 +12,22 @@ export const ColumnContainer = styled.div`
 
     width: 300px; /* Largura fixa para cada coluna */
 
-    background-color: #8c67f3ff; /* Cor de fundo da coluna (Request 3) */
+    background-color: #3133B8; /* Cor de fundo da coluna (Request 3) */
 
     display: flex;
 
+    padding-right: 3%;
+    align-items: center;
+
     flex-direction: column;
 
+    max-height: 80vh;
+
+    /* Adiciona a barra de rolagem vertical APENAS se necessário */
+    overflow-y: auto;
+
+    /* Esconde qualquer rolagem horizontal */
+    overflow-x: hidden;
 
 
     ${props => props.$isDraggingOver && css`
@@ -25,6 +35,7 @@ export const ColumnContainer = styled.div`
         /* Feedback visual quando algo está sendo arrastado sobre a coluna */
 
         background-color: #e3f2fd;
+        border-style: dashed;
 
     `}
 
@@ -41,17 +52,22 @@ export const ColumnContainer = styled.div`
 export const Title = styled.h3`
 
     padding: 8px;
-
+    margin-right: -35px !important;   
     margin: 0;
-
-    font-size: 1.2em;
+    width: 100%;    
+    font-size: 1.5em;
 
     color: #ffffffff;
 
-    border-bottom: 1px solid lightgrey;
+    border-bottom: 2px solid lightgrey;
 
     text-align: center;
+    ${props => props.$isDraggingOver && css`
 
+        color: #3133B8;
+        border-bottom: 2px dashed #3133B8;
+
+    `}
 `;
 
 

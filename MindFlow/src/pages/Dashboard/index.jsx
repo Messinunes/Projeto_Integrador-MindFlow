@@ -51,7 +51,7 @@ import {
 
     FloatingButtonsContainer,
     FloatingButton,
-    FloatingButtonIcon
+    LogoutLink,
 } from './styles.js';
 
 // Importações para o Calendário
@@ -69,8 +69,7 @@ import genericAvatar from '../../assets/Generic_avatar.png';
 import IconNotes from '../../assets/nota_2.png';
 import IconCalendar from '../../assets/calendario_1.png';
 import IconDashboard from '../../assets/painel-do-painel_1.png';
-import IconIA from '../../assets/tecnologia-de-ia_1.png';
-import IconChat from '../../assets/mensagens_1.png';
+
 import IconList from '../../assets/lista_1.png';
 import IconExit from '../../assets/sair-alt_1.png';
 
@@ -425,11 +424,10 @@ function Dashboard({ navigateTo }) { // <--- 🌟 CORREÇÃO 1: Desestruturar na
         <>
             <DragDropContext onDragEnd={onDragEnd}>
                 <TaskListContainer>
-
                     <AddButton onClick={() => openModal(null)}>
                         <h2>+</h2>
                     </AddButton>
-
+                                
                     {kanbanData.columnOrder.map((columnId) => {
                         const column = kanbanData.columns[columnId];
                         const tasks = column.taskIds.map(taskId => kanbanData.tasks[taskId]);
@@ -747,10 +745,8 @@ function Dashboard({ navigateTo }) { // <--- 🌟 CORREÇÃO 1: Desestruturar na
                     <SidebarLink onClick={() => handleNavClick('calendar')} $isActive={activeSection === 'calendar'}><img src={IconCalendar} alt="Calendário" /></SidebarLink>
                     <SidebarLink onClick={() => handleNavClick('panel')} $isActive={activeSection === 'panel'}><img src={IconDashboard} alt="Painel" /></SidebarLink>
                     <SidebarLink onClick={() => handleNavClick('list')} $isActive={activeSection === 'list'}><img src={IconList} alt="Lista / Backlog" /></SidebarLink>
-                    <SidebarLink onClick={() => handleNavClick('chat')} $isActive={activeSection === 'chat'}><img src={IconChat} alt="Chat" /></SidebarLink>
-                    <SidebarLink onClick={() => handleNavClick('ia')} $isActive={activeSection === 'ia'}><img src={IconIA} alt="IA" /></SidebarLink>
                     {/* 🌟 CORREÇÃO 3: Chama handleNavClick('exit') que, por sua vez, chama handleLogout() */}
-                    <SidebarLink onClick={() => handleNavClick('exit')} $isActive={activeSection === 'exit'}><img src={IconExit} alt="Exit" /></SidebarLink>
+                    <LogoutLink onClick={() => handleNavClick('exit')} $isActive={activeSection === 'exit'}><img src={IconExit} alt="Exit" /></LogoutLink>
                 </Sidebar>
 
                 {/* ÁREA DE CONTEÚDO */}
@@ -781,12 +777,8 @@ function Dashboard({ navigateTo }) { // <--- 🌟 CORREÇÃO 1: Desestruturar na
 
                         {/* BOTÕES FLUTUANTES */}
                     <FloatingButtonsContainer>
-                    <FloatingButton $type="task" onClick={() => openModal(null)}>
-                        <FloatingButtonIcon src="src\assets\mensagens_1.png"/>
-                    </FloatingButton>
-                    
                     <FloatingButton $type="chat" onClick={(toggleChat)}>
-                        <FloatingButtonIcon src="\src\assets\tecnologia-de-ia_1.png"/>
+                        <img src="\src\assets\ia_clara.png" alt="" />
                     </FloatingButton>
                     </FloatingButtonsContainer>
                 <UserSettingsPanel />

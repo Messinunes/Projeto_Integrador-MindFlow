@@ -4,11 +4,11 @@ import styled, { css } from 'styled-components';
 const getPriorityColors = (level) => {
   switch (level) {
     case 'low':
-      return { background: '#E6FFD8', text: '#389E0F', border: '#B7EB8F' }; // Verde claro
+      return { background: '#0084FF', text: '#ffffffff', border: '#D9D9D9' }; // Verde claro
     case 'medium':
-      return { background: '#FFFBE6', text: '#D48806', border: '#FFE58F' }; // Amarelo
+      return { background: '#FACC15', text: '#000000ff', border: '#D9D9D9' }; // Amarelo
     case 'high':
-      return { background: '#FFF1F0', text: '#CF1322', border: '#FFA39E' }; // Vermelho claro
+      return { background: '#FF0000', text: '#ffffffff', border: '#D9D9D9' }; // Vermelho claro
     default:
       return { background: '#F0F5FF', text: '#096DD9', border: '#BAE7FF' };
   }
@@ -31,10 +31,10 @@ export const TaskCard = styled.div`
     const colors = getPriorityColors($priority);
     // Aplica uma borda esquerda mais grossa com a cor da prioridade
     return css`
-      border-left: 5px solid ${colors.text}; 
-      border-right: 1px solid ${colors.text};
-      border-top: 1px solid ${colors.text};
-      border-bottom: 1px solid ${colors.text};
+      border-left: 5px solid ${colors.background}; 
+      border-right: 2px solid ${colors.background};
+      border-top: 2px solid ${colors.background};
+      border-bottom: 2px solid ${colors.background};
     `;
   }}
   
@@ -48,7 +48,7 @@ export const TaskCard = styled.div`
     const colors = getPriorityColors($priority);
     // Aplica uma borda esquerda mais grossa com a cor da prioridade
     return css`
-      box-shadow: 0 6px 12px ${colors.text}; 
+      box-shadow: 0 6px 12px ${colors.background}; 
     `;
   }}
   }
@@ -60,8 +60,14 @@ export const TaskHeader = styled.div`
   align-items: flex-start;
   margin-bottom: 10px;
   padding-bottom: 10px;
-  border-bottom: 1px solid #252525ff;
+  border-bottom: 2px solid #D9D9D9;
   word-break: break-word;
+
+   img {
+      width: 2em;
+      height: 2em;
+      cursor: pointer;
+      }
 `;
 
 export const TaskTitle = styled.h4`
@@ -81,11 +87,13 @@ export const PriorityLabel = styled.span`
       color: ${colors.text};
       border: 1px solid ${colors.border};
       padding: 4px 8px;
-      border-radius: 4px;
+      border-radius: 10px;
       font-size: 12px;
       font-weight: 600;
       white-space: nowrap; /* Impede quebra de linha */
       margin-left: 10px;
+      width: 60%;
+      text-align: center;
     `;
   }}
 `;
@@ -103,5 +111,16 @@ export const TaskDetail = styled.p`
       color: #333;
       font-weight: 600;
       margin-right: 5px;
+  }
+`;
+
+export const TaskTitleBody = styled.div`
+  width: 100%;
+  display: flex;
+  align-items: center; /* Garante alinhamento vertical central para os filhos diretos */
+  
+  & > :first-child {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
   }
 `;

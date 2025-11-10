@@ -3,14 +3,18 @@
 import React from 'react';
 import { Draggable } from '@hello-pangea/dnd';
 
-import { 
-    TaskCard, 
-    TaskHeader, 
-    TaskTitle, 
-    PriorityLabel, 
-    TaskBody, 
+import {
+    TaskCard,
+    TaskHeader,
+    TaskTitle,
+    PriorityLabel,
+    TaskBody,
     TaskDetail,
-} from './styles.js'; 
+    
+} from './styles.js';
+
+import openLogo from '../../assets/Vector.png';
+import priorityLogo from '../../assets/priorityLogo.png';
 
 /**
  * Componente que renderiza um único cartão de tarefa.
@@ -19,57 +23,66 @@ import {
  * @param {function} onTaskClick - NOVO: Função chamada ao clicar no cartão para edição.
  */
 // 💡 MUDANÇA 1: Adicionar onTaskClick aos props
-function TaskItem({ task, index, onTaskClick }) { 
-    
+function TaskItem({ task, index, onTaskClick }) {
+
     const formattedDate = new Date(task.dueDate).toLocaleDateString('pt-BR');
 
     const getPriorityText = (priority) => {
         switch (priority) {
             case 'low':
-                return 'Baixa';
+                return 'Prioridade Baixa';
             case 'medium':
-                return 'Média';
+                return 'Prioridade Média';
             case 'high':
-                return 'Alta';
+                return 'Prioridade Alta';
             default:
                 return 'Sem Prioridade';
         }
     };
-    
+
     return (
-        <Draggable 
-            draggableId={task.id} 
-            index={index}          
+        <Draggable
+            draggableId={task.id}
+            index={index}
         >
             {(provided, snapshot) => (
-                <TaskCard 
+                <TaskCard
                     $priority={task.priority}
-                    ref={provided.innerRef} 
-                    {...provided.draggableProps} 
-                    {...provided.dragHandleProps} 
+                    ref={provided.innerRef}
+                    {...provided.draggableProps}
+                    {...provided.dragHandleProps}
                     $isDragging={snapshot.isDragging}
-                    
+
                     // 💡 MUDANÇA 2: Adicionar o handler de clique
-                    onClick={() => onTaskClick(task.id)} 
+                    onClick={() => onTaskClick(task.id)}
                 >
-                    
+
                     <TaskHeader>
-                        <TaskTitle>{task.name}</TaskTitle>
+                        
                         <PriorityLabel $priority={task.priority}>
                             {getPriorityText(task.priority)}
                         </PriorityLabel>
+                        
+                        
+                        <img src={openLogo} alt="Logo para abrir" />
                     </TaskHeader>
 
                     <TaskBody>
+                        
+                            <TaskTitle>{task.name}</TaskTitle>
+                        
                         {task.description && (
                             <TaskDetail>
                                 <strong>Descrição:</strong> {task.description}
                             </TaskDetail>
+                            
                         )}
-                        
-                        <TaskDetail>
-                            <strong>Entrega:</strong> {formattedDate}
-                        </TaskDetail>
+                        {task.dueDate && (
+                            <TaskDetail>
+                                <strong>Data de Vencimento:</strong> {formattedDate}
+                            </TaskDetail>
+                        )}
+
                     </TaskBody>
 
                 </TaskCard>

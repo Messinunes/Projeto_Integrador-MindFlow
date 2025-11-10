@@ -24,7 +24,7 @@ function ColunaTask({ column, tasks, onTaskClick }) {
                     {...provided.droppableProps} // Props necessárias (como IDs)
                     $isDraggingOver={snapshot.isDraggingOver} // Para estilização
                 >
-                    <Title>{column.title}</Title>
+                    <Title $isDraggingOver={snapshot.isDraggingOver}>{column.title}</Title>
                     
                     <TaskList>
                         {/* 2. Mapeia e renderiza as tarefas */}

@@ -1,3 +1,4 @@
+import { add } from 'date-fns';
 import styled, { keyframes, css } from 'styled-components';
 
 // Função para retornar as cores baseadas no tema
@@ -15,7 +16,7 @@ const getThemeColors = (isDark) => ({
     textSecondary: isDark ? '#bbbbbb' : '#666666',
     
     // Borda/Separador
-    border: isDark ? '#333333' : '#e0e0e0',
+    border: isDark ? '#333333' : '#3133B8',
 });
 
 export const HomeBody = styled.div`
@@ -97,9 +98,9 @@ export const AddButton = styled.button`
     z-index: 1; /* Garante que o conteúdo e a borda fiquem acima do ::before */
     
     /* Estilos Visuais Iniciais */
-    color: #5a52d9; /* Cor do texto inicial */
+    color: #3133B8; /* Cor do texto inicial */
     background-color: #f0f2f5;
-    border: solid 2px #5a52d9;
+    border: solid 2px #3133B8;
     border-radius: 100%; /* Botão circular */
     padding: 10px 16px;
     
@@ -110,7 +111,7 @@ export const AddButton = styled.button`
         transform 0.2s ease; 
 
     h2 {
-        color: #5a52d9;
+        color: #3133B8;
         font-weight: 400;
         transition: color 0.3s ease; /* Transição para o h2 também */
     }
@@ -164,13 +165,13 @@ export const Sidebar = styled.nav`
     grid-column: 1 / 2;
     grid-row: 2 / 3;
     background-color: ${props => getThemeColors(props.$isDarkMode).sidebarBg};
-    border-right: 1px solid ${props => getThemeColors(props.$isDarkMode).border};
+    border-right: 3px solid ${props => getThemeColors(props.$isDarkMode).border};
     transition: background-color 0.3s, border-color 0.3s;
     display: flex;
     flex-direction: column;
     align-items: center;
     padding-top: 20px;
-    gap: 25px;
+    
 `;
 
 export const SidebarLink = styled.a`
@@ -179,14 +180,16 @@ export const SidebarLink = styled.a`
     align-items: center;
     width: 50px;
     height: 50px;
-    border-radius: 10px;
+    border-bottom: 2px solid #3133B8;
     cursor: pointer;
     padding: 5px; 
+    margin-bottom: 25px;
     
     img {
         width: 25px; 
         height: 25px;
     }
+    
     
     background-color: transparent;
     
@@ -199,6 +202,14 @@ export const SidebarLink = styled.a`
         background-color: ${props => props.$isDarkMode ? '#3a3a3a' : '#f0f0ff'};
         color: ${props => getThemeColors(props.$isDarkMode).primary};
     }
+`;
+
+export const LogoutLink = styled(SidebarLink)`
+    /* 🔑 A CHAVE: Empurra o link de saída para o final */
+    margin-top: 18em; 
+    border-bottom: none;
+    /* Ajusta a margem inferior para dar um respiro no final da sidebar */
+    margin-bottom: 20px; 
 `;
 
 export const ContentArea = styled.main`
@@ -247,7 +258,7 @@ export const TaskListContainer = styled.div`
     
     /* Adiciona padding lateral para que as colunas não se sobreponham ao botão flutuante */
     padding-left: 10px; /* Deve ser igual ou maior que a largura do AddButton */
-    padding-bottom: 20px; 
+    padding-bottom: 100%; 
 `;
 
 export const KanbanHeader = styled.div`
@@ -279,7 +290,7 @@ export const SprintList = styled.div`
 
 export const SprintItem = styled.div`
     padding: 8px 12px;
-    background-color: #5a52d9;
+    background-color: #3133B8;
     color: white;
     border-radius: 6px;
     font-size: 0.85em;
@@ -289,7 +300,7 @@ export const SprintItem = styled.div`
     white-space: nowrap;
 
     &:hover {
-        background-color: #4841b5;
+        background-color: #3133B8;
         transform: translateY(-1px);
     }
 `;  
@@ -368,7 +379,7 @@ export const TaskHeader = styled.div`
     /* Ajuste as colunas para incluir a nova coluna "Ordem" */
     display: grid;
     grid-template-columns: 0.5fr 2.5fr 1.5fr 1fr 1.5fr 1fr; /* Ordem, Nome, Sprint, Prioridade, Vencimento, Ações */
-    background-color: #5a52d9;
+    background-color: #3133B8;
     color: white;
     padding: 12px 15px;
     font-weight: bold;
@@ -423,9 +434,9 @@ export const TaskPriority = styled.div`
     }};
     color: ${props => {
         switch (props.priority) {
-            case 'high': return '#F5222D';
-            case 'medium': return '#FAAD14';
-            case 'low': return '#52C41A';
+            case 'high': return '#FF0000';
+            case 'medium': return '#FACC15';
+            case 'low': return '#0084FF';
             default: return '#666';
         }
     }};
@@ -433,7 +444,7 @@ export const TaskPriority = styled.div`
 
 export const ActionButton = styled.button`
     padding: 6px 10px;
-    background-color: #5a52d9;
+    background-color: #3133B8;
     color: white;
     border: none;
     border-radius: 4px;
@@ -598,11 +609,18 @@ export const FloatingButton = styled.button`
   }
 `;
 
-export const FloatingButtonIcon = styled.img`
-  font-size: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 24px;
+export const addButtonArea = styled.div`
+    display: flex;
+    /* ESSENCIAL: Alinha os itens (botão e texto) verticalmente no centro */
+    align-items: center; 
+    /* Adiciona um espaço entre o botão e o texto */
+    gap: 10px; 
+
+    /* APLICA-SE AO H2 "Nova Tarefa" */
+    h2 {
+        /* Remove margens padrão do navegador que causam o desalinhamento */
+        margin: 0; 
+        font-size: 16px; /* Ajuste o tamanho da fonte conforme seu design */
+        color: white; /* Exemplo de cor (pode ser diferente no seu caso) */
+    }
 `;
