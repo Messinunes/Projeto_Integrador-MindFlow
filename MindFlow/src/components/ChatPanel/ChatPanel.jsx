@@ -55,82 +55,148 @@ const ChatPanel = ({ open, onClose, isDarkMode }) => {
 
   const callGeminiAPI = async (userMessage) => {
     
-    // Verificação da chave de API (MANTIDA)
+    // Verificação da chave de API
     if (!GEMINI_API_KEY) {
         console.error("Erro de Configuração: VITE_GEMINI_API_KEY não está definida.");
         return "⚠️ Erro de Configuração: A chave de API não foi encontrada. Verifique seu arquivo .env e REINICIE o servidor.";
     }
 
-    try {
-      setIsAILoading(true);
-      console.log("Enviando mensagem para Gemini:", userMessage);
+    const MAX_RETRIES = 3; 
+    const RETRY_DELAY_MS = 2000; 
+    
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+        
+        // ⭐⭐ CORREÇÃO CRÍTICA ESTÁ AQUI ⭐⭐
+        // Esta linha declara a variável 'response' no escopo do loop,
+        // permitindo que 'try', 'catch' e 'finally' a acessem.
+        let response; 
+        
+        try {
+            setIsAILoading(true);
+            console.log(`Enviando mensagem para Gemini (Tentativa ${attempt}):`, userMessage);
 
-      const response = await fetch(GEMINI_API_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              role: "user",
-              parts: [
-                { text: userMessage },
-              ],
-            },
-          ],
-          generationConfig: {
-            temperature: 0.7,
-            topK: 40,
-            topP: 0.95,
-            maxOutputTokens: 1024,
-          },
-          safetySettings: [
-            { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
-            { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
-            { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
-            { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_MEDIUM_AND_ABOVE" }
-          ],
-        }),
-      });
+            response = await fetch(GEMINI_API_URL, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                // Formato correto da systemInstruction
+                systemInstruction: {
+                    parts: [
+                        { 
+                            text: "Você é um assistente amigável e especialista em produtividade e organização de tarefas. Suas respostas devem ser focadas em dar dicas práticas, métodos (como GTD, Pomodoro) e exemplos de listas ou planos. Seja prestativo e encorajador." 
+                        }
+                    ]
+                },
+                
+                contents: [
+                  {
+                    role: "user",
+                    parts: [
+                      { text: userMessage },
+                    ],
+                  },
+                ],
+                generationConfig: {
+                  temperature: 0.7,
+                  topK: 40,
+                  topP: 0.95,
+                  maxOutputTokens: 4096,
+                },
+                safetySettings: [
+                  { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
+                  { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
+                  { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
+                  { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_MEDIUM_AND_ABOVE" }
+                ],
+              }),
+            });
 
-      console.log("Status da resposta:", response.status);
+            console.log("Status da resposta:", response.status);
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Erro detalhado:", errorText);
+            // Tratamento de 503 com Retry
+            if (response.status === 503 && attempt < MAX_RETRIES) {
+                console.warn(`Erro 503. Tentando novamente em ${RETRY_DELAY_MS / 1000}s... (Tentativa ${attempt}/${MAX_RETRIES})`);
+                await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
+                continue; 
+            }
 
-        // Códigos de erro (MANTIDOS)
-        if (response.status === 400) return "⚠️ Erro de requisição (400). Verifique se sua CHAVE DE API é válida e se a API Gemini está ativada no seu painel Google.";
-        if (response.status === 404) return "⚠️ Modelo ou URL da API incorretos. Verifique o endpoint.";
-        if (response.status === 429) return "⚠️ Limite de requisições excedido. Tente novamente mais tarde.";
-        if (response.status === 403) return "⚠️ Acesso negado. Chave de API inválida ou sem permissão.";
-        if (response.status >= 500) return "⚠️ Erro no servidor da IA. Tente novamente em alguns instantes.";
 
-        throw new Error(`Erro ${response.status}: Não foi possível conectar com a IA`);
-      }
+            if (!response.ok) {
+              const errorText = await response.text();
+              console.error("Erro detalhado:", errorText);
 
-      const data = await response.json();
-      console.log("Resposta completa da API:", data);
+              if (response.status === 400) return "⚠️ Erro de requisição (400). Verifique se sua CHAVE DE API é válida e se a API Gemini está ativada no seu painel Google.";
+              if (response.status === 404) return "⚠️ Modelo ou URL da API incorretos. Verifique o endpoint.";
+              if (response.status === 429) return "⚠️ Limite de requisições excedido. Tente novamente mais tarde.";
+              if (response.status === 403) return "⚠️ Acesso negado. Chave de API inválida ou sem permissão.";
+              if (response.status >= 500) return "⚠️ Erro no servidor da IA. Tente novamente em alguns instantes.";
 
-      // Verificação de estrutura de resposta (MANTIDA)
-      if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
-        return data.candidates[0].content.parts[0].text;
-      } else if (data.promptFeedback?.blockReason) {
-        return `⚠️ Sua mensagem foi bloqueada por conter conteúdo inadequado. Motivo: ${data.promptFeedback.blockReason}`;
-      } else {
-        console.error("Estrutura de resposta inesperada ou conteúdo vazio:", data);
-        return "🤖 Olá! Recebi sua mensagem mas tive um problema técnico na resposta da IA. Pode reformular?";
-      }
-    } catch (error) {
-      console.error("Erro ao chamar Gemini API:", error);
-      if (error.message.includes("Failed to fetch")) {
-        return "🌐 Erro de conexão. Verifique sua internet ou se o serviço da IA está online.";
-      }
-      return `❌ Erro: ${error.message}`;
-    } finally {
-      setIsAILoading(false);
+              throw new Error(`Erro ${response.status}: Não foi possível conectar com a IA`);
+            }
+
+            const data = await response.json();
+            console.log("Resposta completa da API:", data);
+
+            // ⭐ NOVO: Obtém o finishReason e o texto
+            const candidate = data.candidates?.[0];
+            const finishReason = candidate?.finishReason;
+            const aiText = candidate?.content?.parts?.[0]?.text;
+
+
+            // 1. Prioriza o tratamento de bloqueios ou cortes (SAFETY e MAX_TOKENS)
+            if (finishReason === 'SAFETY') {
+                const safetyRatings = candidate.safetyRatings;
+                const blockedCategories = safetyRatings
+                    .filter(r => r.probability !== 'NEGLIGIBLE' && r.probability !== 'LOW')
+                    .map(r => r.category.replace('HARM_CATEGORY_', ''));
+                
+                return `⚠️ Resposta bloqueada pela IA (Motivo: Segurança). Categorias detectadas: ${blockedCategories.join(', ')}`;
+            }
+            
+            if (finishReason === 'MAX_TOKENS' && !aiText) {
+                // Se for MAX_TOKENS E NÃO houver texto, avisa que a resposta foi cortada.
+                return "⚠️ A resposta da IA foi muito longa e foi cortada. Por favor, seja mais específico na sua pergunta.";
+            }
+
+
+            // 2. Se o texto foi encontrado, retorna ele
+            if (aiText) {
+              return aiText;
+            } 
+            
+            // 3. Verifica se o prompt foi bloqueado antes da geração
+            else if (data.promptFeedback?.blockReason) {
+              return `⚠️ Sua mensagem foi bloqueada por conter conteúdo inadequado. Motivo: ${data.promptFeedback.blockReason}`;
+            } 
+            
+            // 4. Último recurso: erro de estrutura inesperada (agora muito menos provável)
+            else {
+              console.error("Estrutura de resposta inesperada ou conteúdo vazio:", data);
+              return "🤖 Olá! Recebi sua mensagem mas tive um problema técnico na resposta da IA. Pode reformular?";
+            }
+          } catch (error) {
+            // A Linha 151 do seu erro original está aqui
+            console.error("Erro ao chamar Gemini API:", error); 
+            
+            if (error.message.includes("Failed to fetch")) {
+              return "🌐 Erro de conexão. Verifique sua internet ou se o serviço da IA está online.";
+            }
+            // Aqui você pode estar usando uma string fixa, o que explica a diferença
+            // entre o chat e o console. Vamos usar error.message
+            return `❌ Erro: ${error.message}`;
+          } finally {
+             // Esta lógica 'finally' precisa ser capaz de ler 'response'
+             // Se 'let response;' estiver faltando, é aqui que o ReferenceError é gerado
+             if (attempt === MAX_RETRIES || (response && response.ok)) {
+                setIsAILoading(false);
+             }
+          }
     }
+    
+    setIsAILoading(false);
+    return "⚠️ Erro no servidor da IA após várias tentativas. Tente novamente mais tarde.";
   };
 
   const sendMessage = async () => {
