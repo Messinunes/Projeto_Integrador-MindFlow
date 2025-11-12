@@ -26,7 +26,7 @@ const StatusChart = ({ data }) => {
 
     // Função para renderizar o label da Pie Chart com a porcentagem
     const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, index }) => {
-        const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+        const radius = innerRadius + (outerRadius - innerRadius) * 0.3;
         const x = cx + radius * Math.cos(-midAngle * Math.PI / 180);
         const y = cy + radius * Math.sin(-midAngle * Math.PI / 180);
 
@@ -45,8 +45,8 @@ const StatusChart = ({ data }) => {
                     data={processedData}
                     cx="50%"
                     cy="50%"
-                    innerRadius={80}
-                    outerRadius={140}
+                    innerRadius={60}
+                    outerRadius={100}
                     fill="#8884d8"
                     paddingAngle={5}
                     dataKey="value"

@@ -1,20 +1,21 @@
 import { add } from 'date-fns';
 import styled, { keyframes, css } from 'styled-components';
 
+
 // Função para retornar as cores baseadas no tema
 const getThemeColors = (isDark) => ({
     // Cores Principais
     primary: isDark ? '#8a78ff' : '#5a52d9',
-    
+
     // Fundo
     background: isDark ? '#121212' : '#f0f2f5',   // Fundo da Tela
     sidebarBg: isDark ? '#1e1e1e' : '#ffffff',   // Fundo da Sidebar e Painel
     contentBg: isDark ? '#2c2c2c' : '#ffffff',   // Fundo das Áreas de Conteúdo
-    
+
     // Texto
     text: isDark ? '#ffffff' : '#333333',
     textSecondary: isDark ? '#bbbbbb' : '#666666',
-    
+
     // Borda/Separador
     border: isDark ? '#333333' : '#3133B8',
 });
@@ -184,6 +185,8 @@ export const SidebarLink = styled.a`
     cursor: pointer;
     padding: 5px; 
     margin-bottom: 25px;
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
     
     img {
         width: 25px; 
@@ -303,7 +306,7 @@ export const SprintItem = styled.div`
         background-color: #3133B8;
         transform: translateY(-1px);
     }
-`;  
+`;
 
 // --- NOVOS ESTILOS PARA O PAINEL DE CONTROLE (Panel) ---
 
@@ -311,60 +314,98 @@ export const PanelContainer = styled.div`
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start; 
     padding: 20px;
-    height: 100%; /* Ocupa a altura total da ContentArea */
+    
+    /* REMOVA height: 100%; ou min-height, se estiver presente e causando overflow */
+    /* Deixe a altura ser definida pelo seu conteúdo */
+    /* height: 100%; // <-- Remova/Comente */
+
+    width: 100%;
+    /* Garanta que o padding não adicione altura extra não intencional */
+`;
+
+export const ChartGridWrapper = styled.div`
+    display: grid;
+    grid-template-columns: 1fr 1fr; 
+    gap: 10vh; /* Reduz o espaço entre os gráficos secundários */
+    width: 80%;
+    max-width: 100vw; 
+    margin-top: 0; 
+    margin-left: -15vw;
 `;
 
 export const ChartWrapper = styled.div`
     display: flex;
-    align-items: center;
-    width: 100%;
-    max-width: 800px; /* Limita a largura do gráfico */
-    margin: 30px 0;
+    flex-direction: column;
+    align-items: center; // Isso centraliza o ChartArea horizontalmente
+    width: 100%; 
+    margin: 0; 
+    padding: 15px; 
+    background-color: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    
+    /* 1. ADICIONE ESSA LINHA PARA ALINHAR O TEXTO (O TÍTULO) */
+    text-align: center; 
+    
+    & > h3 {
+        /* Garante que o <h3> ocupe a largura total do seu contêiner (ChartWrapper) */
+        width: 100%; 
+        margin-bottom: 10px; 
+        color: #3133B8; 
+        font-size: 1.1em; 
+    }
+        border: 2px solid #3133B8;
 `;
 
 export const ChartArea = styled.div`
-    flex-grow: 1;
-    height: 450px; /* Altura fixa para todos os gráficos */
-    padding: 20px;
-    background-color: #ffffff;
-    border-radius: 10px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    width: 100%;
+    height: 250px; /* Ou o valor que você definiu para os gráficos secundários */
+    padding: 0; 
+    background-color: transparent; 
+    box-shadow: none; 
+    
+    display: flex; 
+    /* 1. GARANTE CENTRALIZAÇÃO HORIZONTAL */
+    justify-content: center; 
+    /* 2. GARANTE CENTRALIZAÇÃO VERTICAL */
+    align-items: center; 
+    
+    /* 3. ADICIONE ESSA LINHA PARA CENTRALIZAR O TEXTO DENTRO DO CONTEÚDO FLEX */
+    text-align: center; 
 `;
 
-export const ArrowButton = styled.button`
-    background: none;
-    border: none;
-    font-size: 36px;
-    color: #5a52d9;
-    cursor: pointer;
-    padding: 10px;
-    transition: transform 0.2s, color 0.2s;
-    user-select: none; /* Evita seleção de texto ao clicar */
+export const MainChartRowWrapper = styled.div`
+    width: 80%;
+    max-width: 100vw; 
+    margin-bottom: 20px; /* Reduz o espaço inferior para economizar espaço */
     
-    &:hover {
-        color: #4841b5;
-        transform: scale(1.1);
+    & > ${ChartWrapper} {
+        /* Se precisar de ajustes específicos para o card do Burndown, adicione aqui */
+        margin-left: -7.5vw;
+    }
+    
+    /* Ajusta a altura da área interna do gráfico principal */
+    & ${ChartArea} {
+        height: 25vh; /* Reduz a altura do Burndown Chart */
+        text-align: center;
+        align-items: center;
+        justify-content: center;
     }
 `;
-
 // --- ESTILOS PARA O BACKLOG (ComponentList) ---
 
 export const BacklogContainer = styled.div`
     padding: 20px;
     background-color: #f9f9f9;
     border-radius: 8px;
-    height: 100%;
-    overflow-y: auto; 
+    height: auto;
     
     h2 {
         color: #333;
         margin-bottom: 20px;
-        border-bottom: 2px solid #ddd;
+        border-bottom: 2px solid #3133B8;
         padding-bottom: 10px;
     }
 `;
@@ -623,4 +664,64 @@ export const addButtonArea = styled.div`
         font-size: 16px; /* Ajuste o tamanho da fonte conforme seu design */
         color: white; /* Exemplo de cor (pode ser diferente no seu caso) */
     }
+`;
+
+export const StyledCalendarContainer = styled.div`
+  height: 80vh; 
+  background-color: white; 
+  padding: 10px; 
+  border-radius: 8px; 
+  border: 2px solid #3133B8;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+
+  .rbc-calendar {
+      flex-grow: 1; /* Garante que o calendário ocupe o espaço restante */
+  }
+      
+ 
+  .rbc-btn-group {
+    border: 1px solid #3133B8; 
+    border-radius: 8px;
+    display: flex;
+  }
+
+  /* Estiliza todos os botões no estado normal (Remove a borda completa) */
+  .rbc-toolbar button {
+    /* Remove a borda azul completa dos botões internos */
+    border: none !important; 
+    color: #3133B8; 
+    transition: background-color 0.3s, color 0.3s;
+    font-size: 14px;
+    padding: 6px 10px;
+  }
+  
+  /* Adiciona a borda de SEPARAÇÃO entre os botões */
+  /* Aplica a borda apenas na esquerda, exceto para o primeiro botão de cada grupo */
+  .rbc-btn-group button + button {
+    border-left: 1px solid #3133B8; /* Borda de separação */
+  }
+
+  /* Estiliza o botão ATIVO */
+  .rbc-btn-group button.rbc-active {
+    background-color: #3133B8 !important; 
+    color: white !important; 
+    /* Garante que a borda de separação continue visível no ativo */
+    border-left-color: #3133B8 !important; 
+    box-shadow: none; /* Remova a sombra para um visual mais limpo */
+    
+  }
+
+  /* Estiliza o HOVER de todos os botões */
+  .rbc-toolbar button:hover:not(.rbc-active) {
+    background-color: #e6e7f8; 
+    color: #3133B8;
+    border-radius: 9px;
+  }
+
+  /* Opcional: Garante que o título Planejamento de Sprints não interfira na barra do calendário */
+  h2 {
+      margin: 0;
+  }
 `;

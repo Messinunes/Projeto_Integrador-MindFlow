@@ -16,6 +16,9 @@ import {
   Img_Enviar
 } from "./ChatStyles.js";
 
+import IconClose from "../../assets/priorityLogo.png";
+import IconSend from "../../assets/enviarBranco.png";
+import IconMilo from "../../assets/milo.png";
 // A URL do servidor Socket.IO (pode ser removida se o chat for SÓ IA)
 // MANTEMOS A LINHA DE CÓDIGO AQUI, MAS O CÓDIGO ABAIXO NÃO VAI MAIS EMITIR.
 const socket = io("http://localhost:3001");
@@ -274,8 +277,8 @@ const ChatPanel = ({ open, onClose, isDarkMode }) => {
       <ChatPanelContainer $isOpen={open} $isDarkMode={isDarkMode}>
         <ChatPanelContent $isDarkMode={isDarkMode}>
           <ChatHeader $isDarkMode={isDarkMode}>
-            <HeaderTitle>Chat + AI</HeaderTitle>
-            <CloseButton onClick={onClose}>&times;</CloseButton>
+            <HeaderTitle><img src={IconMilo} alt="" />Milo</HeaderTitle>
+            <CloseButton onClick={onClose}><img src={IconClose} alt="" />&times;</CloseButton>
           </ChatHeader>
 
           <MessagesContainer $isDarkMode={isDarkMode}>
@@ -334,7 +337,7 @@ const ChatPanel = ({ open, onClose, isDarkMode }) => {
             />
             <SendButton onClick={sendMessage} disabled={isAILoading || input.trim() === ""}>
               <Img_Enviar
-                src="src/assets/enviar.png"
+                src={IconSend}
                 alt="Enviar"
                 style={{ opacity: isAILoading || input.trim() === "" ? 0.5 : 1, cursor: isAILoading || input.trim() === "" ? 'not-allowed' : 'pointer' }}
               />

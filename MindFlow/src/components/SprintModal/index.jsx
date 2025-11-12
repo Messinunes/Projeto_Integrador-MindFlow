@@ -9,28 +9,23 @@ import {
     FormInput, 
     SaveButton, 
     // Se você tiver um componente para o botão de deletar (como PriorityButton), importe-o
-    // Vou presumir que você tem um estilo básico, mas pode adaptar.
 } from './styles'; // Ajuste o caminho se necessário
 
 
-// O componente agora recebe sprintData e onDelete
 function SprintModal({ onClose, onSave, onDelete, sprintData }) { 
     
     // Determina se estamos editando ou criando
     const isEditing = !!sprintData;
 
-    // Inicialização do estado: usa dados da sprint se for edição, ou valores padrão para criação
+    // Inicialização do estado
     const [currentSprintData, setCurrentSprintData] = useState({
         ...(sprintData || {}),
-        
-        // Garante que o ID esteja presente se for edição
         id: sprintData?.id, 
-        // Garante valores padrão
         name: sprintData?.name || '',
         startDate: sprintData?.startDate || '',
         endDate: sprintData?.endDate || '', 
+        color: sprintData?.color || '#F0F0F0', 
     });
-
     
     const handleChange = (e) => {
         const { id, value } = e.target;
@@ -42,7 +37,6 @@ function SprintModal({ onClose, onSave, onDelete, sprintData }) {
     
     const handleDelete = () => {
         if (window.confirm(`Tem certeza que deseja deletar a sprint "${currentSprintData.name}"? As tarefas nela serão movidas para o Backlog.`)) {
-            // Chama a função onDelete passada pelo Dashboard
             onDelete(currentSprintData.id);
             onClose(); 
         }
@@ -54,20 +48,47 @@ function SprintModal({ onClose, onSave, onDelete, sprintData }) {
         
         // Validação básica
         if (!currentSprintData.name || !currentSprintData.startDate || !currentSprintData.endDate) {
-            alert("Por favor, preencha todos os campos da Sprint.");
+            alert("🛑 Por favor, preencha todos os campos da Sprint.");
             return;
         }
 
-        // Verifica se a data de início é anterior ou igual à data de fim
-        if (new Date(currentSprintData.startDate) > new Date(currentSprintData.endDate)) {
-            alert("A data de início não pode ser posterior à data de término.");
+        // --- VALIDAÇÕES DE DATA APERFEIÇOADAS E CORRIGIDAS ---
+        
+        // 1. Criação das datas com correção de FUSO HORÁRIO ('T12:00:00')
+        // Isso garante que a data seja interpretada localmente, resolvendo o problema de "salto" de dia.
+        const start = new Date(currentSprintData.startDate + 'T12:00:00');
+        const end = new Date(currentSprintData.endDate + 'T12:00:00');
+        
+        const today = new Date();
+        
+        // 2. Normalização de Datas para o início do dia (00:00:00)
+        // ESSENCIAL para a comparação de "passado" ser precisa.
+        today.setHours(0, 0, 0, 0); 
+        start.setHours(0, 0, 0, 0); // <-- Adicionado: Normaliza a data de início
+
+        // 3. Validação de Datas Válidas
+        if (isNaN(start) || isNaN(end)) {
+            alert("🛑 As datas fornecidas são inválidas.");
             return;
         }
 
-        // Chama a função onSave (que no Dashboard será handleSaveSprint)
+        // 4. Data de Início vs. Data de Término
+        if (start > end) {
+            alert("🛑 A data de início não pode ser posterior à data de término.");
+            return;
+        }
+
+        // 5. Data de Início no Passado (CORRIGIDO)
+        // Se a data de início é ESTREITAMENTE menor (<) que o início de hoje (today), então é passado.
+        // Se for HOJE, ambas (start e today) terão o mesmo timestamp (00:00:00) e a condição será falsa (permitindo a criação).
+        if (!isEditing && start < today) {
+             alert("🛑 A data de início não pode ser no passado para uma nova Sprint.");
+             return;
+        }
+        // ----------------------------------------------------
+
+        // Chama a função onSave
         onSave(currentSprintData); 
-        // Não chame onClose aqui, onSave no Dashboard já chama o close se for criação/edição.
-        // Mas se a função onSave não fechar o modal, chame onClose:
         onClose(); 
     };
 
@@ -106,19 +127,27 @@ function SprintModal({ onClose, onSave, onDelete, sprintData }) {
                         />
                     </FormGroup>
 
+                    <FormGroup>
+                        <FormLabel htmlFor="color">Cor da Sprint</FormLabel>
+                        <FormInput id='color' type="color"
+                            value={currentSprintData.color}
+                            onChange={handleChange}
+                            style={{ height: '40px', width: '100px', padding: '5px', cursor: 'pointer' }}
+                        />
+                    </FormGroup>
+
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '20px', gap: '10px' }}>
                         <SaveButton type="submit" style={{ flexGrow: 1 }}>
                             {isEditing ? 'Salvar Edição' : 'Criar Sprint'}
                         </SaveButton>
 
                         {isEditing && (
-                            // Use um estilo que denote exclusão
                             <SaveButton 
                                 type="button" 
                                 onClick={handleDelete} 
                                 style={{ 
                                     flexGrow: 0, 
-                                    backgroundColor: '#ff4d4f', // Ex: Vermelho para deletar
+                                    backgroundColor: '#ff4d4f', 
                                     width: '100px' 
                                 }}
                             >

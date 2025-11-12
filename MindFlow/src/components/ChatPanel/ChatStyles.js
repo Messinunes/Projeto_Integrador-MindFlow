@@ -57,6 +57,14 @@ export const HeaderTitle = styled.h3`
   font-size: 16px;
   font-weight: 500;
   color: black;
+  display: flex;
+  text-align: center;
+  align-items: center;
+  & img {
+    border-radius: 100%;
+    width: 20%;
+    height: auto;
+  }
 `;
 
 export const CloseButton = styled.button`
@@ -68,10 +76,12 @@ export const CloseButton = styled.button`
   padding: 4px;
   border-radius: 4px;
   transition: background-color 0.2s;
+  transition: transform 2s ease; /* Transição suave para a rotação */
+  transform-origin: center center;
 
-  &:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-    width: 30px;
+  :hover {
+  transform: rotate(180deg);
+  filter: drop-shadow(0 0 5px rgba(0, 0, 0, 0.7));
   }
 `;
 
