@@ -16,16 +16,17 @@ import {
   RegisterLink,
 } from './styles.js';
 
-function Login() {
+function Login({ navigateTo }) {
   return (
     <LoginBody>
       <LoginHeader>
         <HeaderSection>
           <Logo src="src/assets/logo_navbar.png" alt="Logo Navbar" />
           <Navbar>
-            <b><a href="home">Home</a></b>
-            <b><a href="IA">IA</a></b>
-            <b><a href="about">Sobre Nós</a></b>
+            <b><a href="home" onClick={(e) => { e.preventDefault(); navigateTo('home'); }}>Home</a></b>
+            <b><a href="IA" onClick={(e) => { e.preventDefault(); navigateTo('ia'); }}>IA</a></b>
+            <b><a href="about" onClick={(e) => { e.preventDefault(); navigateTo('about'); }}>Sobre Nós</a></b>
+            <b><a class="login_nav" href="#login" onClick={(e) => { e.preventDefault(); navigateTo('login', e)}}>Login</a></b>
           </Navbar>
         </HeaderSection>
       </LoginHeader>
@@ -46,7 +47,15 @@ function Login() {
               </FormGroup>
               <LoginButton>
                 <Button type="submit">Login</Button>
-                <RegisterLink href="/register">Cadastrar</RegisterLink>
+                <RegisterLink 
+                  href="/cadastro"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    navigateTo('cadastro');
+                  }}
+                >
+                  Cadastrar
+                </RegisterLink>
               </LoginButton>
             </form>
           </LoginBox>

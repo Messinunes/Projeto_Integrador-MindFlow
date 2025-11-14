@@ -27,7 +27,6 @@ body {
     outline: none;
     border: none;
     text-decoration: none;
-    text-transform: capitalize;
     transition: 0.2s linear;
     font-family: 'Geist', sans-serif;
 }

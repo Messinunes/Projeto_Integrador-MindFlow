@@ -17,16 +17,18 @@ import {
   RegisterLink,
 } from "./styles.js";
 
-function Cadastro() {
+// ADICIONE navigateTo como prop aqui
+function Cadastro({ navigateTo }) {
   return (
     <CadastroBody>
       <CadastroHeader>
         <HeaderSection>
           <Logo src="src\assets\logo_navbar.png" alt="Logo Navbar" />
           <Navbar>
-            <b><a href="home">Home</a></b>
-            <b><a href="IA">IA</a></b>
-            <b><a href="about">Sobre Nós</a></b>
+            <b><a href="home" onClick={(e) => { e.preventDefault(); navigateTo('home'); }}>Home</a></b>
+            <b><a href="IA" onClick={(e) => { e.preventDefault(); navigateTo('ia'); }}>IA</a></b>
+            <b><a href="about" onClick={(e) => { e.preventDefault(); navigateTo('about'); }}>Sobre Nós</a></b>
+            <b><a class="login_nav" href="#login" onClick={(e) => { e.preventDefault(); navigateTo('login', e)}}>Login</a></b>
           </Navbar>
         </HeaderSection>
       </CadastroHeader>
@@ -56,7 +58,16 @@ function Cadastro() {
 
               <CadastroButton>
                 <Button type="submit">Cadastrar</Button>
-                <RegisterLink href="/register">Já possui <span>Login</span>?</RegisterLink>
+                {/* CORREÇÃO AQUI: Mude para login e adicione o onClick */}
+                <RegisterLink 
+                  href="/login"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    navigateTo('login');
+                  }}
+                >
+                  Já possui <span>Login</span>?
+                </RegisterLink>
               </CadastroButton>
             </form>
           </CadastroBox>

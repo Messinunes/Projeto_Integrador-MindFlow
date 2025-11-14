@@ -43,6 +43,7 @@ export const HeaderSection = styled.section`
 `;
 
 export const Navbar = styled.nav`
+  /* 🔹 Links gerais do Navbar */
   a {
     position: relative;
     font-family: "Geist", sans-serif;
@@ -53,37 +54,71 @@ export const Navbar = styled.nav`
     transition: color 0.3s ease, font-size 0.3s ease;
 
     &::before {
-      content: "";
+      content: '';
       position: absolute;
       bottom: 0;
       left: 0;
       width: 0;
       height: 4px;
-      background: linear-gradient(90deg, #1e1b5b, #193676, #2791bc);
+      background: linear-gradient(90deg, #1E1B5B, #193676, #2791BC);
+      border-radius: 0;
       transition: all 0.5s ease-in-out;
     }
+  }
 
-    &:hover {
-      color: var(--nav_color_hover);
-      padding-bottom: 0.5rem;
-      font-size: 2rem;
-    }
+  /* 🔹 Hover apenas para links que NÃO são Login */
+  a:not(.login_nav):hover {
+    color: var(--nav_color_hover);
+    padding-bottom: 0.5rem;
+    font-size: 2rem; /* aumenta apenas os links normais */
+  }
 
-    &:hover::before {
-      width: 100%;
-    }
+  a:not(.login_nav):hover::before {
+    width: 100%; /* underline animado apenas para links normais */
+  }
 
-    @media (max-width: 768px) {
+  /* 🔹 BOTÃO LOGIN */
+  .login_nav {
+    font-size: 1.2rem;
+    background-color: white;
+    color: #3133B8;
+    padding: 0.6rem 1.2rem;
+    border-radius: 10px;
+    border: 3px solid #3133B8;
+    transition: background-color 0.3s ease, color 0.3s ease;
+    text-decoration: none; /* remove sublinhado */
+    display: inline-block;
+    position: relative;
+  }
+
+  /* 🔹 Remove qualquer pseudo-elemento do botão Login */
+  .login_nav::before {
+    display: none;
+    content: none;
+  }
+
+  /* 🔹 Hover do botão Login apenas muda cor */
+  .login_nav:hover {
+    color: white;
+    background-color: #3133B8;
+  }
+
+  @media (max-width: 768px) {
+    a {
       margin: 0 0.5rem;
       font-size: 1.6rem;
     }
+  }
 
-    @media (max-width: 475px) {
+  @media(max-width: 475px) {
+    a {
       margin: 0 0.3rem;
       font-size: 1.5rem;
     }
+  }
 
-    @media (max-width: 320px) {
+  @media(max-width: 320px) {
+    a {
       margin: 0 0.2rem;
       font-size: 1.1rem;
     }

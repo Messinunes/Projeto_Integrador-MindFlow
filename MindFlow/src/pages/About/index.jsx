@@ -26,9 +26,10 @@ function About({ navigateTo }) {
         <HeaderSection>
           <Logo src="src/assets/logo_navbar.png" alt="Logo Navbar" />
           <Navbar>
-            <b><a href="#home" onClick={(e) => handleNavClick('home', e)}>Home</a></b>
-            <b><a href="#ia" onClick={(e) => handleNavClick('ia', e)}>IA</a></b>
-            <b><a href="#about" onClick={(e) => handleNavClick('about', e)}>Sobre Nós</a></b>
+            <b><a href="home" onClick={(e) => { e.preventDefault(); navigateTo('home'); }}>Home</a></b>
+            <b><a href="IA" onClick={(e) => { e.preventDefault(); navigateTo('ia'); }}>IA</a></b>
+            <b><a href="about" onClick={(e) => { e.preventDefault(); navigateTo('about'); }}>Sobre Nós</a></b>
+            <b><a class="login_nav" href="#login" onClick={(e) => { e.preventDefault(); navigateTo('login', e)}}>Login</a></b>
           </Navbar>
         </HeaderSection>
       </AboutHeader>
