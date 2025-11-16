@@ -725,3 +725,25 @@ export const StyledCalendarContainer = styled.div`
       margin: 0;
   }
 `;
+
+export const ArrowButton = styled.button`
+    /* Define o botão como transparente e sem bordas */
+    background: none;
+    border: none;
+    
+    /* Tamanho e cor do ícone (texto) */
+    font-size: 36px;
+    color: #5a52d9; /* Cor primária azul/roxo */
+    
+    cursor: pointer;
+    padding: 10px;
+    
+    /* Transições para suavizar os efeitos de hover */
+    transition: transform 0.2s, color 0.2s;
+    user-select: none; /* Evita que o texto da seta seja selecionado */
+    
+    &:hover {
+        color: #4841b5; /* Escurece ligeiramente a cor no hover */
+        transform: scale(1.1); /* Aumenta um pouco o tamanho para feedback visual */
+    }
+`;

@@ -1,13 +1,13 @@
-import React, { useState, useEffect } from 'react'; // Adicionado useEffect
+import React, { useState, useEffect } from 'react';
 // Importações de Componentes
 import ChatPanel from '../../components/ChatPanel/ChatPanel.jsx';
 import TaskModal from '../../components/TaskModal/index.jsx';
 import ColunaTask from '../../components/ColumnTask';
 import SprintModal from '../../components/SprintModal';
-import StatusChart from '../../components/StatusChart'; // NOVO: Chart Real
-import BurndownChart from '../../components/BurndownChart'; // NOVO: Chart Real
-import PriorityMatrixChart from '../../components/PriorityMatrixChart'; // NOVO: Chart Real
-
+import StatusChart from '../../components/StatusChart';
+import BurndownChart from '../../components/BurndownChart';
+import PriorityMatrixChart from '../../components/PriorityMatrixChart';
+import genericAvatar from '../../assets/Generic_avatar.png';
 // Importação do Drag and Drop
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 
@@ -27,12 +27,10 @@ import {
     TaskListContainer,
     SprintList,
     SprintItem,
-    // Estilos do Painel
     PanelContainer,
     ChartWrapper,
     ChartArea,
-    MainChartRowWrapper,
-    // Estilos do Backlog
+    ArrowButton,
     BacklogContainer,
     TaskList,
     TaskHeader,
@@ -41,89 +39,70 @@ import {
     TaskPriority,
     ActionButton,
     TaskSprintSelect,
-
     SettingsPanelContainer,
     SettingsHeader,
     CloseButton,
     ProfileInfo,
     SettingsList,
     SettingsItem,
-
     FloatingButtonsContainer,
     FloatingButton,
     LogoutLink,
     StyledCalendarContainer,
     ChartGridWrapper,
+    ArrowButton as ChartGridArrowButton
 } from './styles.js';
 
+// 🌟 CORREÇÃO 1: Caminho de importação corrigido para o seu serviço de API
+import { tarefasService } from '../services/tarefasAPI';
+
 // Importações para o Calendário
-// Importações para o Calendário
-import { Calendar, Views, dateFnsLocalizer } from 'react-big-calendar'; // <-- MUDANÇA 1
+import { Calendar, dateFnsLocalizer, Views } from 'react-big-calendar';
 import format from 'date-fns/format';
 import parse from 'date-fns/parse';
 import startOfWeek from 'date-fns/startOfWeek';
 import getDay from 'date-fns/getDay';
-import ptBR from 'date-fns/locale/pt-BR'; // Isso já estava correto
+import ptBR from 'date-fns/locale/pt-BR';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { addDays } from 'date-fns';
 
-// --- MUDANÇA 2: Configuração do dateFnsLocalizer ---
-const locales = {
-    'pt-BR': ptBR, // Passa o locale português
-};
-
-const localizer = dateFnsLocalizer({
-    format,
-    parse,
-    startOfWeek: (date) => startOfWeek(date, { locale: ptBR }), // 0 = Domingo
-    getDay,
-    locales,
-    locale: 'pt-BR',
-});
-// ----------------------------------------------------
 import logoMindFlow from '../../assets/logo_navbar.png';
-import genericAvatar from '../../assets/Generic_avatar.png';
 import IconNotes from '../../assets/nota_2.png';
 import IconCalendar from '../../assets/calendario_1.png';
 import IconDashboard from '../../assets/painel-do-painel_1.png';
-
 import IconList from '../../assets/lista_1.png';
 import IconExit from '../../assets/sair-alt_1.png';
 
-// --- DADOS INICIAIS (MANTIDOS) ---
-const getContrastTextColor = (hexcolor) => {
-    // Remove o '#' se estiver presente
-    const hex = hexcolor.replace('#', '');
-
-    // Converte para RGB (extrai os componentes R, G, B)
-    // Se o formato for #rgb, ele duplica (ex: #f00 -> #ff0000)
-    const r = parseInt(hex.substring(0, 2), 16);
-    const g = parseInt(hex.substring(2, 4), 16);
-    const b = parseInt(hex.substring(4, 6), 16);
-
-    // Calcula a Luminância (Brilho Relativo) usando a fórmula
-    // recomendada pela W3C para percepção humana de cores.
-    // O valor 128 é um bom limite (meio termo entre 0 e 255).
-    const luminance = (0.299 * r + 0.587 * g + 0.114 * b);
-
-    // Se a luminância for > 186 (um limite um pouco mais alto para garantir texto escuro),
-    // a cor de fundo é considerada CLARA, então o texto deve ser PRETO.
-    // Caso contrário, a cor de fundo é ESCURA, e o texto deve ser BRANCO.
-    // Usaremos 186 como um bom limiar (o padrão costuma ser 128, mas 186 melhora o contraste com tons médios).
-    return luminance > 186 ? 'black' : 'white';
+// Configuração do Localizer do Calendário
+const locales = {
+    'pt-BR': ptBR,
 };
+const localizer = dateFnsLocalizer({
+    format,
+    parse,
+    startOfWeek: () => startOfWeek(new Date(), { locale: ptBR }),
+    getDay,
+    locales,
+});
 
+// --- DADOS INICIAIS (Mantidos para o estado inicial) ---
 const today = new Date();
 const initialSprints = {
-
+    'sprint-1': {
+        id: 'sprint-1',
+        name: 'Sprint 1 - Kickoff',
+        startDate: today.toISOString().split('T')[0],
+        endDate: addDays(today, 13).toISOString().split('T')[0],
+        goal: 'Concluir a base do Dashboard e o Kanban',
+    },
 };
 
 const initialData = {
     columns: {
         'column-to-do': {
             id: 'column-to-do',
-            title: 'A Fazer',
-            taskIds: [],
+            title: 'A Fazer (Backlog)',
+            taskIds: ['task-1', 'task-2', 'task-3'],
         },
         'column-in-progress': {
             id: 'column-in-progress',
@@ -136,33 +115,67 @@ const initialData = {
             taskIds: [],
         },
     },
-
+    tasks: {
+        'task-1': {
+            id: 'task-1',
+            name: 'Comprar Material',
+            description: 'Papel e canetas para o projeto.',
+            dueDate: '2025-11-05',
+            priority: 'medium',
+            sprintId: 'sprint-1',
+        },
+        'task-2': {
+            id: 'task-2',
+            name: 'Reunião com Cliente',
+            description: 'Apresentar o protótipo V2.',
+            dueDate: '2025-10-30',
+            priority: 'high',
+            sprintId: 'sprint-1',
+        },
+        'task-3': {
+            id: 'task-3',
+            name: 'Definir Estrutura de Rotas',
+            description: 'Backlog para o próximo ciclo.',
+            dueDate: '2025-11-20',
+            priority: 'low',
+            sprintId: null,
+        },
+    },
     columnOrder: ['column-to-do', 'column-in-progress', 'column-done'],
 };
 
 // --- CONFIGURAÇÃO DO CARROSSEL DE CHARTS ---
-
 const CHART_COMPONENTS = {
-    'Gráfico de Burndown': BurndownChart,
-    'Visão Geral de Status': StatusChart,
-    'Matriz de Prioridade': PriorityMatrixChart,
+    'Burndown Chart': BurndownChart,
+    'Status Overview': StatusChart,
+    'Priority Matrix': PriorityMatrixChart,
 };
 const CHART_TITLES = Object.keys(CHART_COMPONENTS);
 
-// --- COMPONENTES DE SEÇÃO SIMPLES (MANTIDOS) ---
+// --- FUNÇÃO DE CONTRASTE (necessária para o calendário) ---
+const getContrastTextColor = (hexcolor) => {
+    const hex = hexcolor.replace('#', '');
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b);
+    return luminance > 186 ? 'black' : 'white';
+};
+
+// --- COMPONENTES DE SEÇÃO ---
 const ComponentIA = () => <div><h2>Conteúdo: Inteligência Artificial</h2></div>;
 const ComponentChat = () => (
-    <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
+    <div style={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center', 
         height: '100%',
         flexDirection: 'column',
         gap: '20px'
     }}>
         <h2>Chat</h2>
         <p>Use o botão flutuante no canto inferior direito para abrir o chat</p>
-        <button
+        <button 
             onClick={toggleChat}
             style={{
                 padding: '10px 20px',
@@ -178,19 +191,9 @@ const ComponentChat = () => (
     </div>
 );
 
-// Componente Sair foi ajustado para ser um elemento clicável, mas não
-// é mais o componente principal de uma "seção".
-const ComponentExit = ({ onLogout }) => (
-    <div onClick={onLogout} style={{ cursor: 'pointer', padding: '10px', backgroundColor: '#f0f0f0', borderRadius: '5px' }}>
-        <h3>Sair do Sistema</h3>
-    </div>
-);
-
-// --- COMPONENTE DASHBOARD PRINCIPAL (FUNÇÕES E ESTADOS) ---
-
-function Dashboard({ navigateTo }) { // <--- 🌟 CORREÇÃO 1: Desestruturar navigateTo
+// --- COMPONENTE DASHBOARD PRINCIPAL ---
+function Dashboard({ navigateTo }) {
     // ESTADOS
-    const [activeSprintFilter, setActiveSprintFilter] = useState('all');
     const [kanbanData, setKanbanData] = useState(initialData);
     const [sprints, setSprints] = useState(initialSprints);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -200,47 +203,108 @@ function Dashboard({ navigateTo }) { // <--- 🌟 CORREÇÃO 1: Desestruturar na
     const [sprintToEdit, setSprintToEdit] = useState(null);
     const [isSettingsPanelOpen, setIsSettingsPanelOpen] = useState(false);
     const [isDarkMode, setIsDarkMode] = useState(false);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [currentActiveSprintId, setCurrentActiveSprintId] = useState(null);
-    const taskToEdit = editingTaskId ? kanbanData.tasks[editingTaskId] : null;
+    const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
+    const [avatarUrl, setAvatarUrl] = useState(genericAvatar);
+    const [userName, setUserName] = useState("");
+    const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
     const [isChatOpen, setIsChatOpen] = useState(false);
+    const [activeSprintFilter, setActiveSprintFilter] = useState('all'); 
+    const [searchTerm, setSearchTerm] = useState(''); 
 
+    const taskToEdit = editingTaskId ? kanbanData.tasks[editingTaskId] : null;
+
+    // Lógica de ativação de Sprint
+    const [currentActiveSprintId, setCurrentActiveSprintId] = useState(null);
     useEffect(() => {
-        // 1. Define o dia de HOJE (Timestamp de 00:00:00 de hoje)
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         const todayTimestamp = today.getTime();
 
         let activeId = null;
-
         Object.values(sprints).forEach(sprint => {
+            const startDate = new Date(sprint.startDate + 'T12:00:00');
+            const endDate = new Date(sprint.endDate + 'T12:00:00');
 
-            // 2. Cria objetos Date para Início e Fim da sprint
-            const startDate = new Date(sprint.startDate);
-            const endDate = new Date(sprint.endDate);
-
-            // 3. Zera o tempo para comparação precisa do DIA
             startDate.setHours(0, 0, 0, 0);
-
-            // 4. Garante que a data final inclua o último dia inteiro (até 23:59:59.999)
-            // Isso é crucial para incluir o último dia no intervalo.
             endDate.setHours(23, 59, 59, 999);
 
-            // 5. Converte para timestamps
             const startTimestamp = startDate.getTime();
             const endTimestamp = endDate.getTime();
 
-            // 6. Verifica se o dia de hoje está no intervalo
             if (todayTimestamp >= startTimestamp && todayTimestamp <= endTimestamp) {
                 activeId = sprint.id;
             }
         });
-
         setCurrentActiveSprintId(activeId);
-
     }, [sprints]);
+    
+    // FUNÇÕES DE CARREGAMENTO
+    const loadUserAvatar = () => {
+        const userData = localStorage.getItem('userData');
+        const savedAvatar = localStorage.getItem('userAvatar');
+        
+        if (userData) {
+            const user = JSON.parse(userData);
+            setUserName(user.nome);
+        }
+        
+        if (savedAvatar && savedAvatar.startsWith('http')) {
+            setAvatarUrl(savedAvatar);
+            console.log('✅ Avatar carregado:', savedAvatar);
+        } else {
+            setAvatarUrl(genericAvatar);
+            console.log('✅ Usando avatar genérico');
+        }
+    };
 
-    //PARA ABRIR E FECHAR O CHAT
+    const carregarTarefasDoBanco = async () => {
+        try {
+            console.log('🔄 Carregando tarefas do banco...');
+            
+            const tarefasAPI = await tarefasService.getTarefas();
+            
+            // Converter para seu formato interno do Kanban
+            const tasksObject = {};
+            const columnTaskIds = {
+                'column-to-do': [],
+                'column-in-progress': [], 
+                'column-done': []
+            };
+            
+            tarefasAPI.forEach(task => {
+                tasksObject[task.id] = task;
+                const statusMap = {
+                    'to-do': 'column-to-do',
+                    'in-progress': 'column-in-progress',
+                    'done': 'column-done'
+                };
+                columnTaskIds[statusMap[task.status] || 'column-to-do'].push(task.id);
+            });
+            
+            setKanbanData(prevData => ({
+                ...prevData,
+                tasks: tasksObject,
+                columns: {
+                    ...prevData.columns,
+                    'column-to-do': { ...prevData.columns['column-to-do'], taskIds: columnTaskIds['column-to-do'] },
+                    'column-in-progress': { ...prevData.columns['column-in-progress'], taskIds: columnTaskIds['column-in-progress'] },
+                    'column-done': { ...prevData.columns['column-done'], taskIds: columnTaskIds['column-done'] }
+                }
+            }));
+            
+            console.log('✅ Kanban atualizado com', tarefasAPI.length, 'tarefas');
+            
+        } catch (error) {
+            console.error('❌ Erro carregando tarefas:', error);
+        }
+    };
+
+    useEffect(() => {
+        loadUserAvatar();
+        carregarTarefasDoBanco();
+    }, []);
+
+    // FUNÇÕES DE CONTROLE
     const toggleChat = () => {
         setIsChatOpen(prev => !prev);
     };
@@ -253,17 +317,17 @@ function Dashboard({ navigateTo }) { // <--- 🌟 CORREÇÃO 1: Desestruturar na
         setIsDarkMode(prev => !prev);
     };
 
-    // FUNÇÕES DE CONTROLE DE MODAL E NAVEGAÇÃO
     const openModal = (taskId = null) => {
         setEditingTaskId(taskId);
         setIsModalOpen(true);
     }
+
     const closeModal = () => {
         setIsModalOpen(false);
         setEditingTaskId(null);
     }
+
     const handleNavClick = (section) => {
-        // Se for o clique em 'exit', chamamos o handleLogout, caso contrário, navegamos para a seção
         if (section === 'exit') {
             handleLogout();
         } else {
@@ -276,67 +340,32 @@ function Dashboard({ navigateTo }) { // <--- 🌟 CORREÇÃO 1: Desestruturar na
         setSprintToEdit(sprint);
         setIsSprintModalOpen(true);
     };
+
     const handleCloseSprintModal = () => {
         setIsSprintModalOpen(false);
         setSprintToEdit(null);
     };
+
     const handleSaveSprint = (sprintData) => {
-        // --- PREPARAÇÃO DE DATAS ---
-
-        // 1. Data de Início da Sprint (com correção de fuso horário)
+        // Lógica de validação de data (mantida a correção robusta)
         const sprintStart = new Date(sprintData.startDate + 'T12:00:00');
-        // Para a comparação de timestamps do fim de data, precisamos também normalizar.
         const newEndDate = new Date(sprintData.endDate + 'T12:00:00');
-        newEndDate.setHours(0, 0, 0, 0);
-        const endTimestamp = newEndDate.getTime();
 
-        // 2. Data de Hoje (Ponto de Referência)
-        const today = new Date();
+        const sprintStartNormalized = sprintStart.setHours(0, 0, 0, 0);
+        const endTimestampNormalized = newEndDate.setHours(0, 0, 0, 0);
+        const todayTimestampNormalized = new Date().setHours(0, 0, 0, 0);
 
-        // --- VALIDAÇÃO A: Data de Início não pode ser anterior a hoje (APENAS NOVAS SPRINTS) ---
-        if (!sprintData.id) {
-
-            let isPast = false;
-
-            // Extrai componentes do Dia de Hoje
-            const todayYear = today.getFullYear();
-            const todayMonth = today.getMonth();
-            const todayDay = today.getDate();
-
-            // Extrai componentes da Data de Início da Sprint
-            const startYear = sprintStart.getFullYear();
-            const startMonth = sprintStart.getMonth();
-            const startDay = sprintStart.getDate();
-
-            // Compara Ano
-            if (startYear < todayYear) {
-                isPast = true;
-            }
-            // Se Ano igual, Compara Mês
-            else if (startYear === todayYear && startMonth < todayMonth) {
-                isPast = true;
-            }
-            // Se Ano e Mês iguais, Compara Dia
-            else if (startYear === todayYear && startMonth === todayMonth && startDay < todayDay) {
-                isPast = true;
-            }
-
-            // Dispara o erro se for no passado
-            if (isPast) {
-                alert("A data de início não pode ser no passado para uma nova Sprint.");
-                return;
-            }
-        }
-
-        // --- VALIDAÇÃO B: A data de término deve ser igual ou depois da Data de Início ---
-        // Usamos os Timestamps normalizados para essa validação, garantindo precisão:
-        sprintStart.setHours(0, 0, 0, 0);
-        if (endTimestamp < sprintStart.getTime()) {
-            alert("A data de término não pode ser anterior à data de início.");
+        if (!sprintData.id && sprintStartNormalized < todayTimestampNormalized) {
+            alert("A data de início não pode ser anterior a hoje para uma nova Sprint.");
             return;
         }
 
-        // --- LÓGICA DE PERSISTÊNCIA DE DADOS (Inalterada) ---
+        if (endTimestampNormalized < sprintStartNormalized) {
+            alert("A data de término não pode ser anterior à data de início.");
+            return;
+        }
+        
+        // Persistência
         setSprints(prevSprints => {
             if (sprintData.id) {
                 return { ...prevSprints, [sprintData.id]: sprintData };
@@ -354,7 +383,7 @@ function Dashboard({ navigateTo }) { // <--- 🌟 CORREÇÃO 1: Desestruturar na
                 ...prevData.tasks,
                 [taskId]: {
                     ...prevData.tasks[taskId],
-                    sprintId: newSprintId === 'null' ? null : newSprintId, // 'null' é para remover
+                    sprintId: newSprintId === 'null' ? null : newSprintId,
                 }
             }
         }));
@@ -366,96 +395,140 @@ function Dashboard({ navigateTo }) { // <--- 🌟 CORREÇÃO 1: Desestruturar na
             return newSprints;
         });
 
-        setKanbanData(prevData => {
-            // 1. Checagem de segurança: Certifica-se de que prevData.tasks é um objeto, 
-            //    caso contrário, usa um objeto vazio {}.
-            const safeTasks = prevData.tasks || {};
-
-            // 2. Cria a nova lista de tarefas, removendo a referência à sprint excluída.
-            const updatedTasks = Object.values(safeTasks).reduce((acc, task) => {
-                // Se a tarefa pertencia à sprint excluída, define sprintId como null, senão mantém a tarefa.
+        setKanbanData(prevData => ({
+            ...prevData,
+            tasks: Object.values(prevData.tasks).reduce((acc, task) => {
                 acc[task.id] = (task.sprintId === sprintId) ? { ...task, sprintId: null } : task;
                 return acc;
-            }, {});
-
-            // 3. Retorna o novo estado
-            return {
-                ...prevData,
-                tasks: updatedTasks,
-            };
-        });
+            }, {}),
+        }));
 
         handleCloseSprintModal();
     };
 
-    // FUNÇÕES DE TAREFAS (Simplificadas, mas funcionais)
-    const handleAddTask = (newTaskData) => {
-        // A chave newTaskId será a fonte da verdade para o ID.
-        const newTaskId = `task-${Date.now()}`;
-
-        setKanbanData(prevData => {
-            // Objeto da nova tarefa: use o newTaskId gerado, espalhe o resto.
-            const taskPayload = {
-                id: newTaskId,
-                ...newTaskData, // Isso não tem ID, então não sobrescreve.
-                status: 'to-do'
-            };
-
-            const newTasks = {
-                ...prevData.tasks,
-                [newTaskId]: taskPayload // A chave é o newTaskId.
-            };
-            const toDoColumn = prevData.columns['column-to-do'];
-            const newToDoTaskIds = [...toDoColumn.taskIds, newTaskId];
-            const newToDoColumn = { ...toDoColumn, taskIds: newToDoTaskIds };
-            console.log("Kanban Data APÓS adição:", newTasks[newTaskId]);
-            return { ...prevData, tasks: newTasks, columns: { ...prevData.columns, 'column-to-do': newToDoColumn } };
-        });
-        closeModal();
-    };
-
-    const handleDeleteTask = (taskId) => {
-        setKanbanData(prevData => {
-            const newTasks = { ...prevData.tasks };
-            delete newTasks[taskId];
-            const newColumns = { ...prevData.columns };
-            Object.keys(newColumns).forEach(columnId => {
-                newColumns[columnId].taskIds = newColumns[columnId].taskIds.filter(id => id !== taskId);
-            });
-            return { ...prevData, tasks: newTasks, columns: newColumns };
-        });
-        closeModal();
-    };
-
-    const handleEditTask = (editedTaskData) => {
-        setKanbanData(prevData => ({
-            ...prevData,
-            tasks: {
-                ...prevData.tasks,
-                [editedTaskData.id]: editedTaskData,
+    // FUNÇÕES DE TAREFAS (COM API CALLS - CORRIGIDA)
+    const handleAddTask = async (newTaskData) => {
+        try {
+            console.log('🔄 Criando nova tarefa...');
+            
+            // 🔑 1. OBTÉM O ID DO USUÁRIO LOGADO DO localStorage
+            const userData = JSON.parse(localStorage.getItem('userData'));
+            const usuarioId = userData ? userData.id : null; 
+            
+            if (!usuarioId) {
+                alert('Erro: Usuário não logado. Por favor, faça login novamente.');
+                return; 
             }
-        }));
-        closeModal();
+            
+            // 🔑 2. INJETA O ID DO USUÁRIO E STATUS NOS DADOS ENVIADOS
+            const taskComStatus = { 
+                ...newTaskData,
+                status: 'to-do',
+                usuarioId: usuarioId // Adiciona o ID do usuário para o backend
+            };
+
+            const novaTarefa = await tarefasService.createTarefa(taskComStatus);
+            
+            // Atualização do estado local
+            setKanbanData(prevData => {
+                const newTasks = { ...prevData.tasks, [novaTarefa.id]: novaTarefa };
+                const toDoColumn = prevData.columns['column-to-do'];
+                const newToDoTaskIds = [...toDoColumn.taskIds, novaTarefa.id];
+                const newToDoColumn = { ...toDoColumn, taskIds: newToDoTaskIds };
+                return { ...prevData, tasks: newTasks, columns: { ...prevData.columns, 'column-to-do': newToDoColumn } };
+            });
+            
+            closeModal();
+            console.log('✅ Tarefa criada com sucesso:', novaTarefa.name);
+        } catch (error) {
+            console.error('❌ Erro criando tarefa:', error);
+            alert('Erro ao criar tarefa. Tente novamente.');
+        }
     };
 
-    // --- FUNÇÃO DE LOGOUT CORRIGIDA ---
+    const handleDeleteTask = async (taskId) => {
+        try {
+            await tarefasService.deleteTarefa(taskId);
+            
+            // Atualização do estado local
+            setKanbanData(prevData => {
+                const newTasks = { ...prevData.tasks };
+                delete newTasks[taskId];
+                const newColumns = { ...prevData.columns };
+                Object.keys(newColumns).forEach(columnId => {
+                    newColumns[columnId].taskIds = newColumns[columnId].taskIds.filter(id => id !== taskId);
+                });
+                return { ...prevData, tasks: newTasks, columns: newColumns };
+            });
+            
+            closeModal();
+        } catch (error) {
+            console.error('❌ Erro excluindo tarefa:', error);
+            alert('Erro ao excluir tarefa. Tente novamente.');
+        }
+    };
+
+    const handleEditTask = async (editedTaskData) => {
+        try {
+            await tarefasService.updateTarefa(editedTaskData.id, editedTaskData);
+            
+            // Se o status da tarefa mudou, precisamos mover o ID para a coluna correta
+            const oldStatus = kanbanData.tasks[editedTaskData.id]?.status;
+            const newStatus = editedTaskData.status;
+
+            setKanbanData(prevData => {
+                let newColumns = { ...prevData.columns };
+                const newTasks = { ...prevData.tasks, [editedTaskData.id]: editedTaskData };
+
+                if (oldStatus !== newStatus) {
+                    const oldColumnId = `column-${oldStatus}`;
+                    const newColumnId = `column-${newStatus}`;
+
+                    // 1. Remove da coluna antiga
+                    if (newColumns[oldColumnId]) {
+                        newColumns[oldColumnId].taskIds = newColumns[oldColumnId].taskIds.filter(id => id !== editedTaskData.id);
+                    }
+                    // 2. Adiciona à nova coluna (ao final)
+                    if (newColumns[newColumnId]) {
+                         newColumns[newColumnId].taskIds = [...newColumns[newColumnId].taskIds, editedTaskData.id];
+                    }
+                }
+                
+                return { ...prevData, tasks: newTasks, columns: newColumns };
+            });
+            
+            closeModal();
+        } catch (error) {
+            console.error('❌ Erro editando tarefa:', error);
+            alert('Erro ao atualizar tarefa. Tente novamente.');
+        }
+    };
+        
+    // FUNÇÃO DE LOGOUT
     const handleLogout = () => {
-        // 1. (Opcional) Lógica de limpeza de token/estado de usuário aqui.
         console.log('Usuário deslogando e voltando para a Home...');
-
-        // 2. Chama a navegação para a página 'home' através da prop 'navigateTo'.
-        navigateTo('home'); // <-- ESSA FUNÇÃO AGORA ESTÁ DISPONÍVEL
+        localStorage.removeItem('userData');
+        localStorage.removeItem('userAvatar');
+        navigateTo('home');
     };
 
-    // LÓGICA DE DRAG AND DROP (onDragEnd)
-    const onDragEnd = (result) => {
+    // LÓGICA DE DRAG AND DROP (COM SALVAGUARDA)
+    const onDragEnd = async (result) => {
         const { destination, source, draggableId } = result;
+
+        // SALVAGUARDA CONTRA FILTRO
+        if (activeSprintFilter !== 'all') {
+            alert("A movimentação (D&D) é desativada quando um filtro de sprint está ativo.");
+            return;
+        }
+
         if (!destination) return;
         if (destination.droppableId === source.droppableId && destination.index === source.index) return;
 
         const startColumn = kanbanData.columns[source.droppableId];
         const finishColumn = kanbanData.columns[destination.droppableId];
 
+        // 1. Mover DENTRO da mesma coluna
         if (startColumn === finishColumn) {
             const newTaskIds = Array.from(startColumn.taskIds);
             newTaskIds.splice(source.index, 1);
@@ -471,11 +544,31 @@ function Dashboard({ navigateTo }) { // <--- 🌟 CORREÇÃO 1: Desestruturar na
             return;
         }
 
+        // 2. Mover ENTRE colunas
         const startTaskIds = Array.from(startColumn.taskIds);
         startTaskIds.splice(source.index, 1);
         const finishTaskIds = Array.from(finishColumn.taskIds);
         finishTaskIds.splice(destination.index, 0, draggableId);
 
+        // Determinar novo status
+        const statusMap = {
+            'column-to-do': 'to-do',
+            'column-in-progress': 'in-progress',
+            'column-done': 'done'
+        };
+        const newStatus = statusMap[finishColumn.id];
+
+        // Atualizar no banco (apenas o status)
+        try {
+            const taskToUpdate = kanbanData.tasks[draggableId];
+            await tarefasService.updateTarefa(draggableId, { ...taskToUpdate, status: newStatus });
+        } catch (error) {
+             console.error("Erro ao atualizar status da tarefa no banco:", error);
+             alert("Atenção: A tarefa foi movida localmente, mas houve um erro ao salvar o novo status no banco.");
+        }
+
+
+        // Atualização do estado local
         setKanbanData(prevData => ({
             ...prevData,
             columns: {
@@ -483,21 +576,28 @@ function Dashboard({ navigateTo }) { // <--- 🌟 CORREÇÃO 1: Desestruturar na
                 [startColumn.id]: { ...startColumn, taskIds: startTaskIds },
                 [finishColumn.id]: { ...finishColumn, taskIds: finishTaskIds },
             },
+            tasks: {
+                ...prevData.tasks,
+                [draggableId]: {
+                    ...prevData.tasks[draggableId],
+                    status: newStatus
+                }
+            }
         }));
     };
 
     const onBacklogDragEnd = (result) => {
         const { destination, source, draggableId } = result;
 
-        if (!destination || destination.index === source.index) {
+        // SALVAGUARDA CONTRA BUSCA
+        if (searchTerm.trim()) {
+            alert("Não é possível reordenar tarefas enquanto a busca estiver ativa.");
             return;
         }
 
-        // Como o Backlog não tem colunas, apenas reordenamos o array de IDs no 'column-to-do'
-        // que, por padrão, é o nosso backlog principal.
-
-        // NOTA: Se o Backlog deve incluir Em Andamento, precisaríamos de uma nova estrutura de ordem.
-        // Por simplicidade, vamos usar o 'column-to-do' como proxy para a ordem do Backlog.
+        if (!destination || destination.index === source.index) {
+            return;
+        }
 
         const columnToDo = kanbanData.columns['column-to-do'];
         const newTaskIds = Array.from(columnToDo.taskIds);
@@ -518,44 +618,31 @@ function Dashboard({ navigateTo }) { // <--- 🌟 CORREÇÃO 1: Desestruturar na
     // 💡 COMPONENTES DE CONTEÚDO
     // =========================================================================
 
-    // COMPONENTE: QUADRO KANBAN (tasks)
-    // COMPONENTE: QUADRO KANBAN (tasks)
+    // COMPONENTE: QUADRO KANBAN
     const ComponentTasks = () => {
-        // 1. Filtragem das Tarefas
         const getFilteredTasks = (taskIds) => {
-            let tasks = taskIds.map(taskId => kanbanData.tasks[taskId]);
-
+            let tasks = taskIds.map(taskId => kanbanData.tasks[taskId]).filter(Boolean);
+            
             if (activeSprintFilter === 'all') {
-                // Se 'all', retorna todas.
                 return tasks;
             }
 
             if (activeSprintFilter === 'backlog') {
-                // Se 'backlog', retorna tarefas sem sprintId
                 return tasks.filter(task => !task.sprintId);
             }
 
-            // Se for um ID de sprint, filtra por ele
             return tasks.filter(task => task.sprintId === activeSprintFilter);
         };
-
-
+        
         return (
             <>
-                <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: '15px'
-                }}>
-                    <AddButton onClick={() => openModal(null)}>
-                        <h2>+</h2>
-                    </AddButton>
-
-                    {/* NOVO: Seletor de Filtro de Sprint */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', }}>
-                        <h2 style={{ color: '#3133B8', }}>Selecionar por Sprint:</h2>
-                        <TaskSprintSelect style={{ backgroundColor: '#f7f9fc', border: '2px solid #3133B8', padding: '5px', borderRadius: '5px', }}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                    <AddButton onClick={() => openModal(null)}><h2>+</h2></AddButton>
+                    
+                    {/* Seletor de Filtro de Sprint */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <h2 style={{ color: '#3133B8' }}>Selecionar por Sprint:</h2>
+                        <TaskSprintSelect 
                             value={activeSprintFilter}
                             onChange={(e) => setActiveSprintFilter(e.target.value)}
                         >
@@ -566,7 +653,6 @@ function Dashboard({ navigateTo }) { // <--- 🌟 CORREÇÃO 1: Desestruturar na
                             ))}
                         </TaskSprintSelect>
                     </div>
-                    {/* FIM do Seletor de Filtro */}
 
                 </div>
 
@@ -574,40 +660,15 @@ function Dashboard({ navigateTo }) { // <--- 🌟 CORREÇÃO 1: Desestruturar na
                     <TaskListContainer>
                         {kanbanData.columnOrder.map((columnId) => {
                             const column = kanbanData.columns[columnId];
-
-                            // 2. AQUI A MUDANÇA: Filtra as tarefas ANTES de passar
                             const rawTaskIds = column.taskIds;
-                            const tasksInColumn = rawTaskIds
-                                .map(taskId => kanbanData.tasks[taskId]) // Pega o objeto task
-                                .filter(task => { // Aplica a lógica do filtro
-                                    if (!task) return false;
-
-                                    if (activeSprintFilter === 'backlog') {
-                                        // Tarefas sem sprintId
-                                        return !task.sprintId;
-                                    }
-                                    // Tarefas que pertencem à sprint selecionada
-                                    return task.sprintId === activeSprintFilter;
-                                });
-
-                            // Para o ColunaTask, precisamos de um array de objetos task, não apenas IDs
-                            // NOTE: O Drag and Drop só funciona corretamente se o array de taskIds da coluna
-                            // for usado diretamente na ColunaTask. Se o filtro for aplicado DENTRO
-                            // do ColunaTask, o D&D continua no array original.
-
-                            // SOLUÇÃO: Passar APENAS as tarefas filtradas e o D&D precisa ser ajustado (ou limitado)
-                            // Vamos simplificar o D&D nesta seção para funcionar com o filtro:
+                            const tasksToRender = getFilteredTasks(rawTaskIds);
 
                             return (
                                 <ColunaTask
                                     key={column.id}
-                                    column={{ ...column, title: `${column.title} (${tasksInColumn.length})` }} // Contagem de Tarefas incluída!
+                                    column={{ ...column, title: `${column.title} (${tasksToRender.length})` }}
                                     onTaskClick={openModal}
-                                    // Passa o array de objetos Task filtrados:
-                                    tasks={tasksInColumn}
-                                // OBS: O Drag and Drop interno do ColunaTask agora deve usar
-                                // os IDs das `tasksInColumn` e NÃO `column.taskIds`! 
-                                // Você precisará adaptar o ColunaTask para usar o array de objetos.
+                                    tasks={tasksToRender}
                                 />
                             );
                         })}
@@ -617,63 +678,48 @@ function Dashboard({ navigateTo }) { // <--- 🌟 CORREÇÃO 1: Desestruturar na
         );
     };
 
-    // COMPONENTE: CALENDÁRIO / PLANEJAMENTO DE SPRINT (calendar)
+    // COMPONENTE: CALENDÁRIO
     const ComponentCalendar = () => {
-        const customFormats = {
-            dayFormat: 'dd/MM',   // <-- BÔNUS: 'DD/MM' (moment) vira 'dd/MM' (date-fns)
-        };
         const [currentDate, setCurrentDate] = useState(new Date());
         const [currentView, setCurrentView] = useState(Views.MONTH);
 
-        // Checa se kanbanData.tasks está vazio (ou não existe)
-        const hasTasks = kanbanData.tasks && Object.keys(kanbanData.tasks).length > 0;
+        const taskEvents = Object.values(kanbanData.tasks).map(task => {
+            // 🌟 CORREÇÃO 2: Usa 'T12:00:00' para evitar bugs de fuso horário
+            const eventDate = new Date(task.dueDate + 'T12:00:00'); 
 
-        const taskEvents = hasTasks ?
-            Object.values(kanbanData.tasks).map(task => {
-                const eventDate = new Date(task.dueDate);
-                eventDate.setDate(eventDate.getDate() + 1);
-
-                return {
-                    id: task.id,
-                    title: `[T] ${task.name}`,
-                    start: eventDate,
-                    end: eventDate,
-                    isSprint: false,
-                    priority: task.priority,
-                };
-            })
-            : [];
+            return {
+                id: task.id,
+                title: `[T] ${task.name}`,
+                start: eventDate,
+                end: eventDate,
+                isSprint: false,
+                priority: task.priority,
+            };
+        });
 
         const sprintEvents = Object.values(sprints).map(sprint => {
-            // CORREÇÃO: Força o parse da data como fuso horário LOCAL no meio-dia.
+            // Aplica a correção de fuso horário também nas Sprints
             const startDate = new Date(sprint.startDate + 'T12:00:00');
             const endDate = new Date(sprint.endDate + 'T12:00:00');
-
-            // NOTE: A biblioteca 'react-big-calendar' exige que a data final seja o dia seguinte
-            // ao último dia para que a range de dias seja exibida corretamente.
-            // Usaremos addDays(endDate, 1) para adicionar um dia
             const adjustedEndDate = addDays(endDate, 1);
 
             return {
                 id: sprint.id,
                 title: `[S] ${sprint.name}`,
-                start: startDate, // Data de início correta
-                end: adjustedEndDate, // Data de fim (último dia + 1) correta
+                start: startDate,
+                end: adjustedEndDate,
                 isSprint: true,
-                color: sprint.color
+                color: '#5a52d9cc' 
             };
         });
 
         const allEvents = [...taskEvents, ...sprintEvents];
 
         return (
-            <StyledCalendarContainer>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', borderBottom: '2px solid #3133B8', paddingBottom: '10px' }}>
-
+            <div style={{ height: '80vh', backgroundColor: 'white', padding: '10px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
                     <h2>Planejamento de Sprints</h2>
-
-                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center', paddingBottom: '5px' }}>
-
+                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                         <SprintList style={{
                             position: 'relative',
                             top: 'unset',
@@ -685,30 +731,11 @@ function Dashboard({ navigateTo }) { // <--- 🌟 CORREÇÃO 1: Desestruturar na
                                 <SprintItem
                                     key={sprint.id}
                                     onClick={() => handleOpenSprintModal(sprint)}
-
-                                    style={{
-                                        // 1. Define a cor de fundo (com fallback)
-                                        backgroundColor: sprint.color || '#F0F0F0',
-
-                                        // 2. APLICA A COR DE TEXTO CALCULADA PARA CONTRASTE
-                                        color: getContrastTextColor(sprint.color || '#F0F0F0'),
-
-                                        border: `1px solid ${sprint.color || '#ccc'}`,
-                                        padding: '5px 10px',
-                                        borderRadius: '5px',
-                                        boxShadow: sprint.id === currentActiveSprintId
-                                            ? '0 0 10px 2px rgba(90, 82, 217, 0.7)'
-                                            : 'none',
-                                        fontWeight: sprint.id === currentActiveSprintId
-                                            ? 'bold'
-                                            : 'normal',
-                                    }}
                                 >
                                     {sprint.name}
                                 </SprintItem>
                             ))}
                         </SprintList>
-
                         <AddButton
                             onClick={() => handleOpenSprintModal(null)}
                             style={{
@@ -725,10 +752,8 @@ function Dashboard({ navigateTo }) { // <--- 🌟 CORREÇÃO 1: Desestruturar na
                 </div>
 
                 <Calendar
-                    culture='pt-BR'
                     localizer={localizer}
                     events={allEvents}
-                    formats={customFormats}
                     startAccessor="start"
                     endAccessor="end"
                     date={currentDate}
@@ -737,139 +762,67 @@ function Dashboard({ navigateTo }) { // <--- 🌟 CORREÇÃO 1: Desestruturar na
                     onView={(newView) => setCurrentView(newView)}
                     messages={{
                         next: "Próximo", previous: "Anterior", today: "Hoje",
-                        month: "Mês", week: "Semana", day: "Dia", date: "Data", time: "Hora",
-                        events: "Evento",
+                        month: "Mês", week: "Semana", day: "Dia",
                     }}
                     eventPropGetter={(event) => {
                         const style = {};
-
-                        // --- 2. CORREÇÃO APLICADA AQUI ---
                         if (event.isSprint) {
-                            // Usa a cor do evento ou o default
-                            const sprintColor = event.color || '#F0F0F0';
-
-                            // **AQUI ESTÁ A MUDANÇA:** Calcula dinamicamente a cor do texto
-                            const textColor = getContrastTextColor(sprintColor);
-
-                            style.backgroundColor = sprintColor;
-                            style.border = `1px solid ${sprintColor}`;
-                            style.color = textColor; // Define a cor do texto para garantir contraste
-
-                            if (event.id === currentActiveSprintId) {
-                                // Se a Sprint estiver ativa, você pode querer forçar o estilo.
-                                // Aqui, mantemos o contraste, mas podemos adicionar um destaque visual (ex: borda mais grossa).
-                                style.border = `2px solid ${textColor}`;
-                                // style.boxShadow = '0 0 5px rgba(0,0,0,0.5)'; // Exemplo de destaque
-                            }
-
+                            style.backgroundColor = '#5a52d9cc'; style.color = 'white'; style.border = '1px solid #5a52d9';
                         } else {
-                            // Lógica das tarefas (permanece a mesma)
                             const colors = {
                                 high: { backgroundColor: '#FFDAD8', color: '#F5222D', borderColor: '#FFA39E' },
                                 medium: { backgroundColor: '#FFF7AE', color: '#FAAD14', borderColor: '#FFE58F' },
                                 low: { backgroundColor: '#D9F7BE', color: '#52C41A', borderColor: '#B7EB8F' },
                             };
-                            // Object.assign(style, colors[event.priority] || {});
-                            // É melhor usar Spread Operator para clareza em React
                             Object.assign(style, colors[event.priority] || {});
                         }
                         return { style };
                     }}
                 />
-            </StyledCalendarContainer>
+            </div>
         );
     };
 
-    // COMPONENTE: PAINEL DE CONTROLE (Panel) com Carrossel de Charts
+    // COMPONENTE: PAINEL DE CONTROLE
     const ComponentPanel = () => {
-    // 1. Defina os gráficos
-    const mainChartTitle = 'Gráfico de Burndown';
-    const secondaryChartTitles = ['Visão Geral de Status', 'Matriz de Prioridade'];
+        const [currentChartIndex, setCurrentChartIndex] = useState(0);
 
-    const MainChartComponent = CHART_COMPONENTS[mainChartTitle];
-    
-    return (
-        <PanelContainer>
+        const handleNext = () => {
+            setCurrentChartIndex(prev => (prev + 1) % CHART_TITLES.length);
+        };
 
-            {/* --- 1. GRÁFICO PRINCIPAL (Linha Superior) --- */}
-            {/* Usamos um ChartWrapper especial para o Burndown */}
-            <MainChartRowWrapper> 
-                <ChartWrapper key={mainChartTitle}>
-                    <h3>{mainChartTitle}</h3>
-                    <ChartArea> 
-                        <MainChartComponent
+        const handlePrev = () => {
+            setCurrentChartIndex(prev => (prev - 1 + CHART_TITLES.length) % CHART_TITLES.length);
+        };
+
+        const CurrentChartTitle = CHART_TITLES[currentChartIndex];
+        const CurrentChartComponent = CHART_COMPONENTS[CurrentChartTitle];
+
+        return (
+            <PanelContainer>
+                <h2>{CurrentChartTitle}</h2>
+                <ChartWrapper>
+                    <ArrowButton onClick={handlePrev}>{"<"}</ArrowButton>
+                    <ChartArea>
+                        <CurrentChartComponent
                             data={kanbanData}
                             sprints={sprints}
                         />
                     </ChartArea>
+                    <ArrowButton onClick={handleNext}>{">"}</ArrowButton>
                 </ChartWrapper>
-            </MainChartRowWrapper>
+            </PanelContainer>
+        );
+    };
 
-            {/* --- 2. GRÁFICOS SECUNDÁRIOS (Linha Inferior) --- */}
-            {/* Usamos o ChartGridWrapper para os gráficos lado a lado */}
-            <ChartGridWrapper> 
-                {secondaryChartTitles.map((title) => {
-                    const CurrentChartComponent = CHART_COMPONENTS[title];
-                    
-                    return (
-                        <ChartWrapper key={title}>
-                            <h3>{title}</h3>
-                            <ChartArea> 
-                                <CurrentChartComponent
-                                    data={kanbanData}
-                                    sprints={sprints}
-                                />
-                            </ChartArea>
-                        </ChartWrapper>
-                    );
-                })}
-            </ChartGridWrapper>
-        </PanelContainer>
-    );
-};
-
-    // NOVO COMPONENTE: BACKLOG (list)
+    // COMPONENTE: BACKLOG
     const ComponentList = () => {
-        // 1. Lista de todas as tarefas A FAZER (ordem original do backlog)
         const backlogTaskIds = kanbanData.columns['column-to-do'].taskIds;
-        let backlogTasks = backlogTaskIds
-            .map(taskId => kanbanData.tasks[taskId])
-            .filter(task => task && task.id);
-
-        // 🌟 LÓGICA DE FILTRO POR BUSCA (searchTerm)
-        const normalizedSearchTerm = searchTerm.toLowerCase().trim();
-
-        if (normalizedSearchTerm) {
-            backlogTasks = backlogTasks.filter(task =>
-                // Procura no nome da tarefa
-                task.name.toLowerCase().includes(normalizedSearchTerm) ||
-                // Procura na descrição da tarefa (se existir)
-                (task.description && task.description.toLowerCase().includes(normalizedSearchTerm))
-            );
-        }
-        // FIM DA LÓGICA DE FILTRO POR BUSCA
+        const backlogTasks = backlogTaskIds.map(taskId => kanbanData.tasks[taskId]).filter(task => task && task.id);
 
         return (
-            <BacklogContainer style={{ border: '2px solid #3133B8', overflow: 'hidden' }}>
-                <h2>Backlog do Projeto ({backlogTasks.length} Tarefas encontradas)</h2>
-
-                {/* 🌟 NOVO: Campo de Busca */}
-                <input
-                    type="text"
-                    placeholder="Buscar tarefas por nome ou descrição..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    style={{
-                        width: '100%',
-                        padding: '10px',
-                        marginBottom: '15px',
-                        borderRadius: '8px',
-                        border: '1px solid #ccc',
-                        outline: 'none',
-                        fontSize: '16px'
-                    }}
-                />
-
+            <BacklogContainer>
+                <h2>Backlog do Projeto ({backlogTasks.length} Tarefas a Fazer)</h2>
                 <DragDropContext onDragEnd={onBacklogDragEnd}>
                     <TaskList>
                         <TaskHeader>
@@ -880,8 +833,6 @@ function Dashboard({ navigateTo }) { // <--- 🌟 CORREÇÃO 1: Desestruturar na
                             <div>Vencimento</div>
                             <div>Ações</div>
                         </TaskHeader>
-
-                        {/* Droppable: Toda a lista é uma zona de soltura */}
                         <Droppable droppableId="backlog-list-area">
                             {(provided) => (
                                 <div
@@ -889,7 +840,6 @@ function Dashboard({ navigateTo }) { // <--- 🌟 CORREÇÃO 1: Desestruturar na
                                     ref={provided.innerRef}
                                 >
                                     {backlogTasks.map((task, index) => (
-                                        // Draggable: Cada linha é arrastável
                                         <Draggable key={task.id} draggableId={task.id} index={index}>
                                             {(provided, snapshot) => (
                                                 <TaskRow
@@ -900,18 +850,15 @@ function Dashboard({ navigateTo }) { // <--- 🌟 CORREÇÃO 1: Desestruturar na
                                                 >
                                                     <div style={{ fontWeight: 'bold' }}>{index + 1}</div>
                                                     <TaskName>{task.name}</TaskName>
-
-                                                    {/* Select de Sprint - Mantido */}
                                                     <TaskSprintSelect
                                                         value={task.sprintId || 'null'}
                                                         onChange={(e) => handleQuickAssignToSprint(task.id, e.target.value)}
-                                                    >
+                                                    >  
                                                         <option key="backlog-option" value="null">Global (Backlog)</option>
                                                         {Object.values(sprints).map(sprint => (
                                                             <option key={sprint.id} value={sprint.id}>{sprint.name}</option>
                                                         ))}
                                                     </TaskSprintSelect>
-
                                                     <TaskPriority priority={task.priority}>{task.priority || 'N/A'}</TaskPriority>
                                                     <div>{task.dueDate}</div>
                                                     <ActionButton onClick={() => openModal(task.id)}>Editar</ActionButton>
@@ -923,11 +870,8 @@ function Dashboard({ navigateTo }) { // <--- 🌟 CORREÇÃO 1: Desestruturar na
                                 </div>
                             )}
                         </Droppable>
-
                         {backlogTasks.length === 0 && (
-                            <p style={{ marginTop: '20px', color: '#666', textAlign: 'center' }}>
-                                Nenhuma tarefa encontrada no Backlog {searchTerm && `com o termo "${searchTerm}"`}.
-                            </p>
+                            <p style={{ marginTop: '20px', color: '#666', textAlign: 'center' }}>O Backlog (A Fazer) está vazio!</p>
                         )}
                     </TaskList>
                 </DragDropContext>
@@ -935,26 +879,293 @@ function Dashboard({ navigateTo }) { // <--- 🌟 CORREÇÃO 1: Desestruturar na
         );
     };
 
-    // REMOVIDO: ComponentExit da lista de seções principais,
-    // pois ele é uma AÇÃO (Logout), não um conteúdo de página.
-    // O ComponentExit continuará sendo usado dentro do painel de configurações.
+    // MODAL DE UPLOAD DE AVATAR
+    const AvatarUploadModal = ({ onClose }) => {
+        const userData = JSON.parse(localStorage.getItem('userData'));
+        
+        const [selectedFile, setSelectedFile] = useState(null);
+        const [previewUrl, setPreviewUrl] = useState(avatarUrl || genericAvatar);
+        const [uploading, setUploading] = useState(false);
 
-    // =========================================================================
-    // NOVO: PAINEL DE CONFIGURAÇÕES LATERAIS
-    // =========================================================================
+        const handleFileSelect = (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                setSelectedFile(file);
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    setPreviewUrl(e.target.result);
+                };
+                reader.readAsDataURL(file);
+            }
+        };
 
+        const handleUpload = async () => {
+            if (!selectedFile) {
+                alert("Por favor, selecione uma imagem primeiro.");
+                return;
+            }
+
+            if (!userData || !userData.id) {
+                alert("Erro: usuário não identificado.");
+                return;
+            }
+
+            setUploading(true);
+
+            try {
+                const formData = new FormData();
+                formData.append('avatar', selectedFile);
+                formData.append('userId', userData.id);
+
+                console.log('📤 Enviando upload para usuário:', userData.id);
+                
+                const response = await fetch('http://localhost:3001/upload-avatar', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    const newAvatarUrl = data.avatarUrl;
+                    setAvatarUrl(newAvatarUrl);
+                    localStorage.setItem('userAvatar', newAvatarUrl);
+                    
+                    const updatedUserData = { ...userData, avatar: newAvatarUrl };
+                    localStorage.setItem('userData', JSON.stringify(updatedUserData));
+                    
+                    console.log('✅ Avatar atualizado:', newAvatarUrl);
+                    alert("✅ Foto alterada com sucesso!");
+                    onClose();
+                } else {
+                    console.error('❌ Erro no upload:', data.error);
+                    alert("❌ Erro ao fazer upload: " + data.error);
+                }
+            } catch (error) {
+                console.error('💥 Erro de conexão:', error);
+                alert("❌ Erro de conexão ao fazer upload.");
+            } finally {
+                setUploading(false);
+            }
+        };
+
+        return (
+            <div style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: 'rgba(0,0,0,0.5)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 1000
+            }}>
+                <div style={{
+                    backgroundColor: 'white',
+                    padding: '20px',
+                    borderRadius: '10px',
+                    width: '400px',
+                    textAlign: 'center'
+                }}>
+                    <h3>Alterar Foto do Perfil</h3>
+                    
+                    {/* PREVIEW DA IMAGEM */}
+                    <div style={{ margin: '20px 0' }}>
+                        <img 
+                            src={previewUrl} 
+                            alt="Preview" 
+                            style={{
+                                width: '150px',
+                                height: '150px',
+                                borderRadius: '50%',
+                                objectFit: 'cover',
+                                border: '2px solid #ddd'
+                            }}
+                        />
+                    </div>
+                    
+                    {/* INPUT DE ARQUIVO */}
+                    <input 
+                        type="file" 
+                        accept="image/*"
+                        onChange={handleFileSelect}
+                        style={{ 
+                            margin: '10px 0',
+                            padding: '10px',
+                            border: '1px solid #ddd',
+                            borderRadius: '5px',
+                            width: '100%'
+                        }}
+                        disabled={uploading}
+                    />
+                    
+                    {/* BOTÕES DE AÇÃO */}
+                    <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', marginTop: '20px' }}>
+                        <button 
+                            onClick={handleUpload}
+                            disabled={uploading || !selectedFile}
+                            style={{
+                                padding: '10px 20px',
+                                backgroundColor: (uploading || !selectedFile) ? '#ccc' : '#5a52d9',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '5px',
+                                cursor: (uploading || !selectedFile) ? 'not-allowed' : 'pointer'
+                            }}
+                        >
+                            {uploading ? '📤 Enviando...' : '✅ Confirmar'}
+                        </button>
+                        <button 
+                            onClick={onClose}
+                            disabled={uploading}
+                            style={{
+                                padding: '10px 20px',
+                                backgroundColor: '#ccc',
+                                color: 'black',
+                                border: 'none',
+                                borderRadius: '5px',
+                                cursor: uploading ? 'not-allowed' : 'pointer'
+                            }}
+                        >
+                            ❌ Cancelar
+                        </button>
+                    </div>
+                    
+                    {/* MENSAGEM DE STATUS */}
+                    {!selectedFile && (
+                        <p style={{ color: '#666', fontSize: '12px', marginTop: '10px' }}>
+                            ⚠️ Selecione uma imagem para upload
+                        </p>
+                    )}
+                </div>
+            </div>
+        );
+    };
+
+    // MODAL DE NOTIFICAÇÕES
+    const NotificationModal = () => {
+        const [notificationSettings, setNotificationSettings] = useState({
+            email: true,
+            system: true,
+            taskReminders: true,
+            sprintAlerts: false
+        });
+
+        const handleToggle = (setting) => {
+            setNotificationSettings(prev => ({
+                ...prev,
+                [setting]: !prev[setting]
+            }));
+        };
+
+        const handleSave = () => {
+            alert('Configurações de notificação salvas!');
+            setIsNotificationModalOpen(false);
+        };
+
+        return (
+            <div style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: 'rgba(0,0,0,0.5)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 1000
+            }}>
+                <div style={{
+                    backgroundColor: 'white',
+                    padding: '25px',
+                    borderRadius: '10px',
+                    width: '400px',
+                    maxWidth: '90vw'
+                }}>
+                    <h3 style={{ margin: '0 0 20px 0', color: '#333' }}>🔔 Notificações</h3>
+                    <div style={{ marginBottom: '20px' }}>
+                        {[
+                            { key: 'email', label: '📧 Notificações por Email' },
+                            { key: 'system', label: '💻 Notificações no Sistema' },
+                            { key: 'taskReminders', label: '⏰ Lembretes de Tarefas' },
+                            { key: 'sprintAlerts', label: '🚀 Notificações de Sprint' }
+                        ].map(item => (
+                            <div key={item.key} style={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                padding: '10px 0',
+                                borderBottom: '1px solid #eee'
+                            }}>
+                                <span>{item.label}</span>
+                                <input 
+                                    type="checkbox"
+                                    checked={notificationSettings[item.key]}
+                                    onChange={() => handleToggle(item.key)}
+                                    style={{ transform: 'scale(1.2)' }}
+                                />
+                            </div>
+                        ))}
+                    </div>
+                    <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                        <button 
+                            onClick={handleSave}
+                            style={{
+                                padding: '8px 16px',
+                                backgroundColor: '#5a52d9',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '5px',
+                                cursor: 'pointer'
+                            }}
+                        >
+                            Salvar
+                        </button>
+                        <button 
+                            onClick={() => setIsNotificationModalOpen(false)}
+                            style={{
+                                padding: '8px 16px',
+                                backgroundColor: '#ccc',
+                                color: '#333',
+                                border: 'none',
+                                borderRadius: '5px',
+                                cursor: 'pointer'
+                            }}
+                        >
+                            Cancelar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
+    // PAINEL DE CONFIGURAÇÕES
     const UserSettingsPanel = () => {
-        // Coloque as configurações aqui
+        const [userData, setUserData] = useState({ id: 123, nome: "Usuário" });
+        
+        useEffect(() => {
+            const savedUserData = localStorage.getItem('userData');
+            if (savedUserData) {
+                setUserData(JSON.parse(savedUserData));
+            }
+        }, []);
+
         const settingsItems = [
             { name: "Ver Perfil", action: () => alert("Redirecionar para página de Perfil.") },
-            { name: "Mudar Foto/Avatar", action: () => alert("Abrir modal de upload.") },
-            { name: "Preferências de Notificação", action: () => alert("Abrir submenu de notificações.") },
-            {
-                name: `Modo Escuro: ${isDarkMode ? 'Ativado' : 'Desativado'}`,
-                action: toggleTheme
+            { name: "Mudar Foto/Avatar", action: () => setIsAvatarModalOpen(true) },
+            { 
+                name: "Preferências de Notificação", 
+                action: () => setIsNotificationModalOpen(true)
             },
-            // Ação de Sair agora está aqui
-            { name: "Sair / Logout", action: handleLogout }, // <--- Usa o handleLogout
+            { 
+                name: `Modo Escuro: ${isDarkMode ? 'Ativado' : 'Desativado'}`,
+                action: toggleTheme 
+            },
+            { name: "Sair / Logout", action: handleLogout },
         ];
 
         return (
@@ -963,12 +1174,11 @@ function Dashboard({ navigateTo }) { // <--- 🌟 CORREÇÃO 1: Desestruturar na
                     <h3>Configurações de Usuário</h3>
                     <CloseButton onClick={toggleSettingsPanel} $isDarkMode={isDarkMode}>&times;</CloseButton>
                 </SettingsHeader>
-
                 <ProfileInfo $isDarkMode={isDarkMode}>
-                    <Avatar src={genericAvatar} alt="Avatar" />
-                    <p>Usuário Ativo (ID: 123)</p>
+                    <Avatar src={avatarUrl} alt="Avatar" />
+                    <p>{userData.nome}</p>
+                    <p style={{ fontSize: '12px', color: '#666' }}>ID: {userData.id}</p>
                 </ProfileInfo>
-
                 <SettingsList>
                     {settingsItems.map(item => (
                         <SettingsItem key={item.name} onClick={item.action} $isDarkMode={isDarkMode}>
@@ -979,28 +1189,52 @@ function Dashboard({ navigateTo }) { // <--- 🌟 CORREÇÃO 1: Desestruturar na
             </SettingsPanelContainer>
         );
     };
-    // FIM DO UserSettingsPanel
 
-    // Mapeamento de Componentes para a navegação
-    // REMOVIDO: 'exit: ComponentExit' pois a navegação é feita pelo handleNavClick
+    // MAPEAMENTO DE COMPONENTES
     const componentMap = {
         tasks: ComponentTasks,
         calendar: ComponentCalendar,
         panel: ComponentPanel,
-        list: ComponentList, // <-- AGORA É O BACKLOG
+        list: ComponentList,
         ia: ComponentIA,
         chat: ComponentChat,
     };
     const CurrentComponent = componentMap[activeSection] || ComponentTasks;
 
-    // ESTRUTURA PRINCIPAL DO DASHBOARD
+    // RENDER PRINCIPAL
     return (
         <HomeBody>
             <LayoutContainer $isDarkMode={isDarkMode}>
-                {/* TOP BAR */}
+                {/* TOP BAR ATUALIZADO COM NOME DO USUÁRIO */}
                 <TopBar>
                     <Logo src={logoMindFlow} alt="MindFlow Logo" />
-                    <Avatar src={genericAvatar} alt="Perfil do Usuário" onClick={toggleSettingsPanel} />
+                    
+                    {/* ÁREA DO USUÁRIO COM NOME E FOTO */}
+                    <div 
+                        onClick={toggleSettingsPanel}
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '10px',
+                            cursor: 'pointer',
+                            padding: '5px 10px',
+                            borderRadius: '8px',
+                            transition: 'background-color 0.2s'
+                        }}
+                        onMouseEnter={(e) => e.target.style.backgroundColor = '#f5f5f5'}
+                        onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                    >
+                        <span style={{
+                            color: '#333',
+                            fontWeight: '500',
+                            fontSize: '14px',
+                            fontFamily: 'Arial, sans-serif'
+                        }}>
+                            {userName}
+                        </span>
+                        <Avatar src={avatarUrl} alt="Perfil do Usuário" />
+                    </div>
+                    
                     <AnimatedBorder />
                 </TopBar>
 
@@ -1010,7 +1244,6 @@ function Dashboard({ navigateTo }) { // <--- 🌟 CORREÇÃO 1: Desestruturar na
                     <SidebarLink onClick={() => handleNavClick('calendar')} $isActive={activeSection === 'calendar'}><img src={IconCalendar} alt="Calendário" /></SidebarLink>
                     <SidebarLink onClick={() => handleNavClick('panel')} $isActive={activeSection === 'panel'}><img src={IconDashboard} alt="Painel" /></SidebarLink>
                     <SidebarLink onClick={() => handleNavClick('list')} $isActive={activeSection === 'list'}><img src={IconList} alt="Lista / Backlog" /></SidebarLink>
-                    {/* 🌟 CORREÇÃO 3: Chama handleNavClick('exit') que, por sua vez, chama handleLogout() */}
                     <LogoutLink onClick={() => handleNavClick('exit')} $isActive={activeSection === 'exit'}><img src={IconExit} alt="Exit" /></LogoutLink>
                 </Sidebar>
 
@@ -1019,7 +1252,7 @@ function Dashboard({ navigateTo }) { // <--- 🌟 CORREÇÃO 1: Desestruturar na
                     <CurrentComponent />
                 </ContentArea>
 
-                {/* MODAL DE TAREFAS */}
+                {/* MODAIS */}
                 {isModalOpen && (
                     <TaskModal
                         onClose={closeModal}
@@ -1030,7 +1263,6 @@ function Dashboard({ navigateTo }) { // <--- 🌟 CORREÇÃO 1: Desestruturar na
                     />
                 )}
 
-                {/* MODAL DE SPRINT */}
                 {isSprintModalOpen && (
                     <SprintModal
                         onClose={handleCloseSprintModal}
@@ -1040,20 +1272,23 @@ function Dashboard({ navigateTo }) { // <--- 🌟 CORREÇÃO 1: Desestruturar na
                     />
                 )}
 
+                {isAvatarModalOpen && <AvatarUploadModal onClose={() => setIsAvatarModalOpen(false)} />}
+
+                {isNotificationModalOpen && <NotificationModal />}
+
                 {/* BOTÕES FLUTUANTES */}
                 <FloatingButtonsContainer>
                     <FloatingButton $type="chat" onClick={(toggleChat)}>
                         <img src="\src\assets\ia_clara.png" alt="" />
                     </FloatingButton>
                 </FloatingButtonsContainer>
+                
                 <UserSettingsPanel />
-
-                <ChatPanel
-                    open={isChatOpen}
-                    onClose={toggleChat}
-                    isDarkMode={isDarkMode}
+                <ChatPanel 
+                    open={isChatOpen} 
+                    onClose={toggleChat} 
+                    isDarkMode={isDarkMode} 
                 />
-
             </LayoutContainer>
         </HomeBody>
     );
