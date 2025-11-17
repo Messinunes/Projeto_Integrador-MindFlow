@@ -50,6 +50,7 @@ import {
     LogoutLink,
     StyledCalendarContainer,
     ChartGridWrapper,
+    MainChartRowWrapper
 } from './styles.js';
 
 // 🌟 CORREÇÃO 1: Caminho de importação corrigido para o seu serviço de API
@@ -74,34 +75,31 @@ import IconExit from '../../assets/sair-alt_1.png';
 
 // Configuração do Localizer do Calendário
 const locales = {
-    'pt-BR': ptBR,
+    'pt-BR': ptBR, // Passa o locale português
 };
+
 const localizer = dateFnsLocalizer({
     format,
     parse,
-    startOfWeek: () => startOfWeek(new Date(), { locale: ptBR }),
+    startOfWeek: (date) => startOfWeek(date, { locale: ptBR }), // 0 = Domingo
     getDay,
     locales,
+    locale: 'pt-BR',
 });
 
 // --- DADOS INICIAIS (Mantidos para o estado inicial) ---
+
 const today = new Date();
 const initialSprints = {
-    'sprint-1': {
-        id: 'sprint-1',
-        name: 'Sprint 1 - Kickoff',
-        startDate: today.toISOString().split('T')[0],
-        endDate: addDays(today, 13).toISOString().split('T')[0],
-        goal: 'Concluir a base do Dashboard e o Kanban',
-    },
+
 };
 
 const initialData = {
     columns: {
         'column-to-do': {
             id: 'column-to-do',
-            title: 'A Fazer (Backlog)',
-            taskIds: ['task-1', 'task-2', 'task-3'],
+            title: 'A Fazer',
+            taskIds: [],
         },
         'column-in-progress': {
             id: 'column-in-progress',
@@ -114,40 +112,15 @@ const initialData = {
             taskIds: [],
         },
     },
-    tasks: {
-        'task-1': {
-            id: 'task-1',
-            name: 'Comprar Material',
-            description: 'Papel e canetas para o projeto.',
-            dueDate: '2025-11-05',
-            priority: 'medium',
-            sprintId: 'sprint-1',
-        },
-        'task-2': {
-            id: 'task-2',
-            name: 'Reunião com Cliente',
-            description: 'Apresentar o protótipo V2.',
-            dueDate: '2025-10-30',
-            priority: 'high',
-            sprintId: 'sprint-1',
-        },
-        'task-3': {
-            id: 'task-3',
-            name: 'Definir Estrutura de Rotas',
-            description: 'Backlog para o próximo ciclo.',
-            dueDate: '2025-11-20',
-            priority: 'low',
-            sprintId: null,
-        },
-    },
+
     columnOrder: ['column-to-do', 'column-in-progress', 'column-done'],
 };
 
 // --- CONFIGURAÇÃO DO CARROSSEL DE CHARTS ---
 const CHART_COMPONENTS = {
-    'Burndown Chart': BurndownChart,
-    'Status Overview': StatusChart,
-    'Priority Matrix': PriorityMatrixChart,
+    'Gráfico de Burndown': BurndownChart,
+    'Visão Geral de Status': StatusChart,
+    'Matriz de Prioridade': PriorityMatrixChart,
 };
 const CHART_TITLES = Object.keys(CHART_COMPONENTS);
 
@@ -193,6 +166,7 @@ const ComponentChat = () => (
 // --- COMPONENTE DASHBOARD PRINCIPAL ---
 function Dashboard({ navigateTo }) {
     // ESTADOS
+    const [activeSprintFilter, setActiveSprintFilter] = useState('all');
     const [kanbanData, setKanbanData] = useState(initialData);
     const [sprints, setSprints] = useState(initialSprints);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -207,7 +181,6 @@ function Dashboard({ navigateTo }) {
     const [userName, setUserName] = useState("");
     const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
     const [isChatOpen, setIsChatOpen] = useState(false);
-    const [activeSprintFilter, setActiveSprintFilter] = useState('all'); 
     const [searchTerm, setSearchTerm] = useState(''); 
 
     const taskToEdit = editingTaskId ? kanbanData.tasks[editingTaskId] : null;
@@ -695,46 +668,61 @@ function Dashboard({ navigateTo }) {
 
     // COMPONENTE: CALENDÁRIO
     const ComponentCalendar = () => {
+        const customFormats = {
+            dayFormat: 'dd/MM',   // <-- BÔNUS: 'DD/MM' (moment) vira 'dd/MM' (date-fns)
+        };
         const [currentDate, setCurrentDate] = useState(new Date());
         const [currentView, setCurrentView] = useState(Views.MONTH);
 
-        const taskEvents = Object.values(kanbanData.tasks).map(task => {
-            // 🌟 CORREÇÃO 2: Usa 'T12:00:00' para evitar bugs de fuso horário
-            const eventDate = new Date(task.dueDate + 'T12:00:00'); 
+        // Checa se kanbanData.tasks está vazio (ou não existe)
+        const hasTasks = kanbanData.tasks && Object.keys(kanbanData.tasks).length > 0;
 
-            return {
-                id: task.id,
-                title: `[T] ${task.name}`,
-                start: eventDate,
-                end: eventDate,
-                isSprint: false,
-                priority: task.priority,
-            };
-        });
+        const taskEvents = hasTasks ?
+            Object.values(kanbanData.tasks).map(task => {
+                const eventDate = new Date(task.dueDate);
+                eventDate.setDate(eventDate.getDate() + 1);
+
+                return {
+                    id: task.id,
+                    title: `[T] ${task.name}`,
+                    start: eventDate,
+                    end: eventDate,
+                    isSprint: false,
+                    priority: task.priority,
+                };
+            })
+            : [];
 
         const sprintEvents = Object.values(sprints).map(sprint => {
-            // Aplica a correção de fuso horário também nas Sprints
+            // CORREÇÃO: Força o parse da data como fuso horário LOCAL no meio-dia.
             const startDate = new Date(sprint.startDate + 'T12:00:00');
             const endDate = new Date(sprint.endDate + 'T12:00:00');
+
+            // NOTE: A biblioteca 'react-big-calendar' exige que a data final seja o dia seguinte
+            // ao último dia para que a range de dias seja exibida corretamente.
+            // Usaremos addDays(endDate, 1) para adicionar um dia
             const adjustedEndDate = addDays(endDate, 1);
 
             return {
                 id: sprint.id,
                 title: `[S] ${sprint.name}`,
-                start: startDate,
-                end: adjustedEndDate,
+                start: startDate, // Data de início correta
+                end: adjustedEndDate, // Data de fim (último dia + 1) correta
                 isSprint: true,
-                color: '#5a52d9cc' 
+                color: sprint.color
             };
         });
 
         const allEvents = [...taskEvents, ...sprintEvents];
 
         return (
-            <div style={{ height: '80vh', backgroundColor: 'white', padding: '10px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+            <StyledCalendarContainer>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', borderBottom: '2px solid #3133B8', paddingBottom: '10px' }}>
+
                     <h2>Planejamento de Sprints</h2>
-                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+
+                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center', paddingBottom: '5px' }}>
+
                         <SprintList style={{
                             position: 'relative',
                             top: 'unset',
@@ -746,11 +734,30 @@ function Dashboard({ navigateTo }) {
                                 <SprintItem
                                     key={sprint.id}
                                     onClick={() => handleOpenSprintModal(sprint)}
+
+                                    style={{
+                                        // 1. Define a cor de fundo (com fallback)
+                                        backgroundColor: sprint.color || '#F0F0F0',
+
+                                        // 2. APLICA A COR DE TEXTO CALCULADA PARA CONTRASTE
+                                        color: getContrastTextColor(sprint.color || '#F0F0F0'),
+
+                                        border: `1px solid ${sprint.color || '#ccc'}`,
+                                        padding: '5px 10px',
+                                        borderRadius: '5px',
+                                        boxShadow: sprint.id === currentActiveSprintId
+                                            ? '0 0 10px 2px rgba(90, 82, 217, 0.7)'
+                                            : 'none',
+                                        fontWeight: sprint.id === currentActiveSprintId
+                                            ? 'bold'
+                                            : 'normal',
+                                    }}
                                 >
                                     {sprint.name}
                                 </SprintItem>
                             ))}
                         </SprintList>
+
                         <AddButton
                             onClick={() => handleOpenSprintModal(null)}
                             style={{
@@ -767,77 +774,153 @@ function Dashboard({ navigateTo }) {
                 </div>
 
                 <Calendar
+                    culture='pt-BR'
                     localizer={localizer}
                     events={allEvents}
+                    formats={customFormats}
                     startAccessor="start"
                     endAccessor="end"
                     date={currentDate}
                     view={currentView}
                     onNavigate={(newDate) => setCurrentDate(newDate)}
-                    onView={(newView) => setCurrentDate(newView)}
+                    onView={(newView) => setCurrentView(newView)}
                     messages={{
                         next: "Próximo", previous: "Anterior", today: "Hoje",
-                        month: "Mês", week: "Semana", day: "Dia",
+                        month: "Mês", week: "Semana", day: "Dia", date: "Data", time: "Hora",
+                        events: "Evento",
                     }}
                     eventPropGetter={(event) => {
                         const style = {};
+
+                        // --- 2. CORREÇÃO APLICADA AQUI ---
                         if (event.isSprint) {
-                            style.backgroundColor = '#5a52d9cc'; style.color = 'white'; style.border = '1px solid #5a52d9';
+                            // Usa a cor do evento ou o default
+                            const sprintColor = event.color || '#F0F0F0';
+
+                            // **AQUI ESTÁ A MUDANÇA:** Calcula dinamicamente a cor do texto
+                            const textColor = getContrastTextColor(sprintColor);
+
+                            style.backgroundColor = sprintColor;
+                            style.border = `1px solid ${sprintColor}`;
+                            style.color = textColor; // Define a cor do texto para garantir contraste
+
+                            if (event.id === currentActiveSprintId) {
+                                // Se a Sprint estiver ativa, você pode querer forçar o estilo.
+                                // Aqui, mantemos o contraste, mas podemos adicionar um destaque visual (ex: borda mais grossa).
+                                style.border = `2px solid ${textColor}`;
+                                // style.boxShadow = '0 0 5px rgba(0,0,0,0.5)'; // Exemplo de destaque
+                            }
+
                         } else {
+                            // Lógica das tarefas (permanece a mesma)
                             const colors = {
                                 high: { backgroundColor: '#FFDAD8', color: '#F5222D', borderColor: '#FFA39E' },
                                 medium: { backgroundColor: '#FFF7AE', color: '#FAAD14', borderColor: '#FFE58F' },
                                 low: { backgroundColor: '#D9F7BE', color: '#52C41A', borderColor: '#B7EB8F' },
                             };
+                            // Object.assign(style, colors[event.priority] || {});
+                            // É melhor usar Spread Operator para clareza em React
                             Object.assign(style, colors[event.priority] || {});
                         }
                         return { style };
                     }}
                 />
-            </div>
+            </StyledCalendarContainer>
         );
     };
 
+
     // COMPONENTE: PAINEL DE CONTROLE
     const ComponentPanel = () => {
-        const [currentChartIndex, setCurrentChartIndex] = useState(0);
+    // 1. Defina os gráficos
+    const mainChartTitle = 'Gráfico de Burndown';
+    const secondaryChartTitles = ['Visão Geral de Status', 'Matriz de Prioridade'];
 
-        const handleNext = () => {
-            setCurrentChartIndex(prev => (prev + 1) % CHART_TITLES.length);
-        };
+    const MainChartComponent = CHART_COMPONENTS[mainChartTitle];
+    
+    return (
+        <PanelContainer>
 
-        const handlePrev = () => {
-            setCurrentChartIndex(prev => (prev - 1 + CHART_TITLES.length) % CHART_TITLES.length);
-        };
-
-        const CurrentChartTitle = CHART_TITLES[currentChartIndex];
-        const CurrentChartComponent = CHART_COMPONENTS[CurrentChartTitle];
-
-        return (
-            <PanelContainer>
-                <h2>{CurrentChartTitle}</h2>
-                <ChartWrapper>
-                    <ArrowButton onClick={handlePrev}>{"<"}</ArrowButton>
-                    <ChartArea>
-                        <CurrentChartComponent
+            {/* --- 1. GRÁFICO PRINCIPAL (Linha Superior) --- */}
+            {/* Usamos um ChartWrapper especial para o Burndown */}
+            <MainChartRowWrapper> 
+                <ChartWrapper key={mainChartTitle}>
+                    <h3>{mainChartTitle}</h3>
+                    <ChartArea> 
+                        <MainChartComponent
                             data={kanbanData}
                             sprints={sprints}
                         />
                     </ChartArea>
-                    <ArrowButton onClick={handleNext}>{">"}</ArrowButton>
                 </ChartWrapper>
-            </PanelContainer>
-        );
-    };
+            </MainChartRowWrapper>
+
+            {/* --- 2. GRÁFICOS SECUNDÁRIOS (Linha Inferior) --- */}
+            {/* Usamos o ChartGridWrapper para os gráficos lado a lado */}
+            <ChartGridWrapper> 
+                {secondaryChartTitles.map((title) => {
+                    const CurrentChartComponent = CHART_COMPONENTS[title];
+                    
+                    return (
+                        <ChartWrapper key={title}>
+                            <h3>{title}</h3>
+                            <ChartArea> 
+                                <CurrentChartComponent
+                                    data={kanbanData}
+                                    sprints={sprints}
+                                />
+                            </ChartArea>
+                        </ChartWrapper>
+                    );
+                })}
+            </ChartGridWrapper>
+        </PanelContainer>
+    );
+};
+
 
     // COMPONENTE: BACKLOG
     const ComponentList = () => {
+        // 1. Lista de todas as tarefas A FAZER (ordem original do backlog)
         const backlogTaskIds = kanbanData.columns['column-to-do'].taskIds;
-        const backlogTasks = backlogTaskIds.map(taskId => kanbanData.tasks[taskId]).filter(task => task && task.id);
+        let backlogTasks = backlogTaskIds
+            .map(taskId => kanbanData.tasks[taskId])
+            .filter(task => task && task.id);
+
+        // 🌟 LÓGICA DE FILTRO POR BUSCA (searchTerm)
+        const normalizedSearchTerm = searchTerm.toLowerCase().trim();
+
+        if (normalizedSearchTerm) {
+            backlogTasks = backlogTasks.filter(task =>
+                // Procura no nome da tarefa
+                task.name.toLowerCase().includes(normalizedSearchTerm) ||
+                // Procura na descrição da tarefa (se existir)
+                (task.description && task.description.toLowerCase().includes(normalizedSearchTerm))
+            );
+        }
+        // FIM DA LÓGICA DE FILTRO POR BUSCA
 
         return (
-            <BacklogContainer>
-                <h2>Backlog do Projeto ({backlogTasks.length} Tarefas a Fazer)</h2>
+            <BacklogContainer style={{ border: '2px solid #3133B8', overflow: 'hidden' }}>
+                <h2>Backlog do Projeto ({backlogTasks.length} Tarefas encontradas)</h2>
+
+                {/* 🌟 NOVO: Campo de Busca */}
+                <input
+                    type="text"
+                    placeholder="Buscar tarefas por nome ou descrição..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    style={{
+                        width: '100%',
+                        padding: '10px',
+                        marginBottom: '15px',
+                        borderRadius: '8px',
+                        border: '1px solid #ccc',
+                        outline: 'none',
+                        fontSize: '16px'
+                    }}
+                />
+
                 <DragDropContext onDragEnd={onBacklogDragEnd}>
                     <TaskList>
                         <TaskHeader>
@@ -848,6 +931,8 @@ function Dashboard({ navigateTo }) {
                             <div>Vencimento</div>
                             <div>Ações</div>
                         </TaskHeader>
+
+                        {/* Droppable: Toda a lista é uma zona de soltura */}
                         <Droppable droppableId="backlog-list-area">
                             {(provided) => (
                                 <div
@@ -855,6 +940,7 @@ function Dashboard({ navigateTo }) {
                                     ref={provided.innerRef}
                                 >
                                     {backlogTasks.map((task, index) => (
+                                        // Draggable: Cada linha é arrastável
                                         <Draggable key={task.id} draggableId={task.id} index={index}>
                                             {(provided, snapshot) => (
                                                 <TaskRow
@@ -865,15 +951,18 @@ function Dashboard({ navigateTo }) {
                                                 >
                                                     <div style={{ fontWeight: 'bold' }}>{index + 1}</div>
                                                     <TaskName>{task.name}</TaskName>
+
+                                                    {/* Select de Sprint - Mantido */}
                                                     <TaskSprintSelect
                                                         value={task.sprintId || 'null'}
                                                         onChange={(e) => handleQuickAssignToSprint(task.id, e.target.value)}
-                                                    >  
+                                                    >
                                                         <option key="backlog-option" value="null">Global (Backlog)</option>
                                                         {Object.values(sprints).map(sprint => (
                                                             <option key={sprint.id} value={sprint.id}>{sprint.name}</option>
                                                         ))}
                                                     </TaskSprintSelect>
+
                                                     <TaskPriority priority={task.priority}>{task.priority || 'N/A'}</TaskPriority>
                                                     <div>{task.dueDate}</div>
                                                     <ActionButton onClick={() => openModal(task.id)}>Editar</ActionButton>
@@ -885,8 +974,11 @@ function Dashboard({ navigateTo }) {
                                 </div>
                             )}
                         </Droppable>
+
                         {backlogTasks.length === 0 && (
-                            <p style={{ marginTop: '20px', color: '#666', textAlign: 'center' }}>O Backlog (A Fazer) está vazio!</p>
+                            <p style={{ marginTop: '20px', color: '#666', textAlign: 'center' }}>
+                                Nenhuma tarefa encontrada no Backlog {searchTerm && `com o termo "${searchTerm}"`}.
+                            </p>
                         )}
                     </TaskList>
                 </DragDropContext>
@@ -1170,7 +1262,6 @@ function Dashboard({ navigateTo }) {
         }, []);
 
         const settingsItems = [
-            { name: "Ver Perfil", action: () => alert("Redirecionar para página de Perfil.") },
             { name: "Mudar Foto/Avatar", action: () => setIsAvatarModalOpen(true) },
             { 
                 name: "Preferências de Notificação", 

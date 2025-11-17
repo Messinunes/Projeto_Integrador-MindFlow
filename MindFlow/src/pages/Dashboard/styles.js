@@ -527,7 +527,7 @@ export const SettingsPanelContainer = styled.div`
     box-shadow: -4px 0 10px ${props => props.$isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.15)'};
     z-index: 1000; /* Garante que fique acima de tudo */
     transition: transform 0.3s ease-in-out;
-
+    border-left: 2px solid ${props => getThemeColors(props.$isDarkMode).border};
     /* Controle de visibilidade */
     transform: translateX(${props => props.$isOpen ? '0' : '100%'});
     
@@ -545,7 +545,7 @@ export const SettingsHeader = styled.div`
     justify-content: space-between;
     align-items: center;
     padding: 15px;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1.5px solid ${props => getThemeColors(props.$isDarkMode).border};
     background-color: #f7f9fc;
     
     h3 {
@@ -573,7 +573,7 @@ export const ProfileInfo = styled.div`
     flex-direction: column;
     align-items: center;
     padding: 20px;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1.5px solid ${props => getThemeColors(props.$isDarkMode).border};
     
     /* Reutiliza o estilo do Avatar, mas ajusta o tamanho se necessário */
     ${Avatar} { 
